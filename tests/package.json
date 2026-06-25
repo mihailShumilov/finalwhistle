@@ -8,7 +8,8 @@
   "scripts": {
     "spike": "tsx src/spike/validate_stat_spike.ts",
     "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lifecycle": "tsx src/lifecycle/devnet_lifecycle.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.32.1",
