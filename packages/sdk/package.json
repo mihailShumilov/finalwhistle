@@ -30,7 +30,8 @@
     "bn.js": "5.2.3",
     "solana-resilience-kit": "1.2.0",
     "tweetnacl": "1.0.3",
-    "@solana/spl-token": "0.4.14"
+    "@solana/spl-token": "0.4.14",
+    "@opentelemetry/api": "1.9.1"
   },
   "devDependencies": {
     "@types/bn.js": "5.2.0",

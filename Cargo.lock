@@ -1239,10 +1239,20 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "litesvm",
+ "solana-account",
+ "solana-clock",
+ "solana-instruction",
  "solana-keypair",
  "solana-message",
+ "solana-program-error",
+ "solana-program-option",
+ "solana-program-pack",
+ "solana-pubkey 3.0.0",
  "solana-signer",
  "solana-transaction",
+ "solana-transaction-error",
+ "spl-associated-token-account-interface",
+ "spl-token-interface",
 ]
 
 [[package]]

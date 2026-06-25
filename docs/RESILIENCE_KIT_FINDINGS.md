@@ -42,6 +42,45 @@ During the spike and lifecycle runs, `api.devnet.solana.com` intermittently rate
 dropped sends. This is the motivation for constructing the SDK pool from **≥2** endpoints with
 `freshnessAware` routing and a `CreditRateLimiter`, so reads/sends fail over instead of erroring.
 
-*(Integration-time findings — type awkwardness, missing helpers, bugs — are appended below as
-the SDK / keeper / frontend wire the kit in. Small, safe fixes are patched upstream against the
-kit's own fault harness with its coverage gate kept green; larger ones are filed as issues.)*
+### F-003 — `@opentelemetry/api` is imported eagerly even when unused
+**Severity:** low (friction).
+`solana-resilience-kit/dist/observability/metrics.js` imports `@opentelemetry/api` at module
+load, so even an integration that only uses `InMemoryMetrics` fails with
+`Cannot find package '@opentelemetry/api'` until that optional peer is installed. The README
+calls it optional, which is true for *using* `OtelMetrics`, but the eager import makes it a
+hard requirement for importing the package at all.
+**Repro:** `import { InMemoryMetrics } from "solana-resilience-kit"` with no `@opentelemetry/api`
+installed → throws on import.
+**Proposed fix:** lazy/dynamic-import `@opentelemetry/api` inside `OtelMetrics` only, or guard
+the import, so `InMemoryMetrics`-only consumers don't need the peer. Workaround: we pin
+`@opentelemetry/api@1.9.1` in the SDK + keeper.
+
+### Keeper reliability suite — PASSING (the headline result)
+`apps/keeper/test/reliability.test.ts` drives the keeper's real send path
+(`ResilientRpcPool` → `pool.rpc()` → `TransactionSender`, with the SDK's web3→kit instruction
+adapter building the CU-budgeted settle tx) through the shipped fault harness. All five pass:
+
+| Scenario | Injected fault | Asserted outcome |
+|---|---|---|
+| Healthy | none | `confirmed` |
+| Broken primary | `errorRate: 1` on primary, healthy backup | `confirmed` (failover) |
+| Blockhash death | `dropRate: 1`, clock advanced past `lastValidBlockHeight` | `expired`, **same signature** (never re-signed → no double-pay) |
+| Rate limiting | `rate429Rate: 1` on primary, healthy backup | `confirmed`, primary `stats.rateLimited > 0` |
+| Lagging node | `slotLag: 250` on one of two endpoints | `confirmed` (freshness routing) |
+
+**Harness modelling note (not a bug):** a `dropRate` silent drop is *terminal for a signature*
+— `MockCluster.rpcSendTransaction` records the drop on first accept and a re-send of the same
+signature is a no-op. This is exactly correct: a silently-dropped tx whose blockhash later dies
+**cannot** be recovered by rebroadcast; the right behaviour (which the kit delivers) is to report
+`expired` and force a rebuild with a fresh blockhash, never to re-sign. So "transient recovery"
+is correctly modelled as *failover across endpoints* (429 / transport error before the tx is
+recorded), not as re-sending a dropped signature. Our tests assert exactly this distinction.
+
+### Integration ergonomics — positive
+- `ResilientRpcPool` really is a drop-in: `pool.rpc()` returns a normal `@solana/kit` RPC, so
+  our account reads (`getAccountInfo`, `getProgramAccounts`) and `getLatestBlockhash` all flow
+  through it with zero special-casing — no raw kit RPC anywhere in the codebase.
+- `TransactionSender`'s injected `sleep` made the reliability tests fully deterministic (advance
+  the mock clock per loop iteration) with no real timers.
+- `clusterGuard: { expected: "devnet", mode: "throw" }` is a one-liner that makes a
+  mainnet-intended settle physically unable to land on devnet — exactly our finality/safety need.
