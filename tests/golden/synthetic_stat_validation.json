@@ -1,0 +1,24 @@
+{
+  "_comment": "Synthetic, well-formed ScoresStatValidation used to lock the off-chain → on-chain encoding deterministically while the devnet TxLINE data backend is unavailable. Replaced/augmented by the live capture in stat_validation.devnet.json once /api/scores/stat-validation is reachable. Values: P1 Goals=3, P2 Goals=1 (diff=2).",
+  "ts": 1782000000000,
+  "statToProve": { "key": 1, "value": 3, "period": 0 },
+  "statToProve2": { "key": 2, "value": 1, "period": 0 },
+  "eventStatRoot": "1111111111111111111111111111111111111111111111111111111111111111",
+  "summary": {
+    "fixtureId": 17271370,
+    "updateStats": { "updateCount": 42, "minTimestamp": 1781999000000, "maxTimestamp": 1782000000000 },
+    "eventStatsSubTreeRoot": "2222222222222222222222222222222222222222222222222222222222222222"
+  },
+  "statProof": [
+    { "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "isRightSibling": true }
+  ],
+  "statProof2": [
+    { "hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "isRightSibling": false }
+  ],
+  "subTreeProof": [
+    { "hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "isRightSibling": true }
+  ],
+  "mainTreeProof": [
+    { "hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", "isRightSibling": false }
+  ]
+}
