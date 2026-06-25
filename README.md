@@ -8,8 +8,19 @@ Merkle proof is verified on-chain — no oracle vote, no dispute window, no oper
 
 A market is a predicate over one or two TxLINE score stats, e.g. `P1 Corners > 10` or
 `P1 Goals − P2 Goals ≥ 2`. Settlement is a **CPI into TxLINE `validate_stat`**: a valid proof
-routes USDC to winners atomically; an invalid or false proof reverts. Every payout ships a
+routes USDC to winners atomically; a tampered proof reverts. Every payout ships a
 **Verifiable Settlement Receipt** anyone can re-check in the browser.
+
+### Live on devnet ✅
+
+- **FinalWhistle program:** [`GSud9smJwwV6QhDLd2hmSQPShj1w8zYumz5BL3snbmao`](https://explorer.solana.com/address/GSud9smJwwV6QhDLd2hmSQPShj1w8zYumz5BL3snbmao?cluster=devnet)
+  (settles via CPI into TxLINE devnet `6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J`).
+- **Proven end-to-end on devnet:** the Phase-1 spike landed real single- and two-stat
+  `validate_stat` transactions and confirmed tampered proofs revert; the full lifecycle
+  (`create → place → settle(CPI) → claim`) lands and pays out exactly. Reproduce with
+  `pnpm --filter @finalwhistle/tests lifecycle`.
+- **Tests:** 58 Rust (Mollusk/LiteSVM) + 22 TS (incl. the live golden vector) + a 5/5
+  `solana-resilience-kit` fault-harness reliability suite — all green.
 
 | | |
 |---|---|
@@ -79,6 +90,29 @@ docker compose up --build          # full local stack on ports 779x / 189xx
 
 Pinned toolchain (see `CLAUDE.md` §3): Anchor 1.0.2 · Agave/Solana CLI 3.1.x · Rust 1.93 ·
 Node 24 · pnpm 11 · `@solana/kit` 6.10 · Next.js 16.2 · Tailwind 4.3 · Hono 4.12.
+
+## Deploy (Cloudflare Workers, primary)
+
+```bash
+anchor deploy --provider.cluster devnet          # program (already live; see DEVNET.md)
+pnpm --filter @finalwhistle/api deploy            # read API (wrangler)
+pnpm --filter @finalwhistle/keeper deploy         # settlement keeper + Cron
+pnpm --filter @finalwhistle/web deploy            # frontend
+```
+
+The edge apps are deploy-ready; publishing them to public URLs needs a Cloudflare account
+(`wrangler login`) + secrets (`wrangler secret put KEEPER_SECRET_KEY|TXLINE_JWT|TXLINE_API_TOKEN`).
+A Hetzner + Docker Compose + Caddy path is the documented fallback.
+
+## Documentation
+
+- [`docs/TECHNICAL.md`](./docs/TECHNICAL.md) — core idea, settlement flow, `validate_stat` CPI, security model, **TxLINE endpoints used**
+- [`docs/TXLINE_FEEDBACK.md`](./docs/TXLINE_FEEDBACK.md) — API integration feedback (what we liked + friction)
+- [`docs/RESILIENCE_KIT_FINDINGS.md`](./docs/RESILIENCE_KIT_FINDINGS.md) — `solana-resilience-kit` battle-testing log + reliability results
+- [`docs/diagrams.md`](./docs/diagrams.md) — architecture, settlement-sequence, oracle-comparison
+- [`docs/DEMO_SCRIPT.md`](./docs/DEMO_SCRIPT.md) — ≤5-minute demo walkthrough
+- [`docs/COMPLIANCE.md`](./docs/COMPLIANCE.md) — §10 hackathon checklist (status)
+- [`DEVNET.md`](./DEVNET.md) — deployed addresses + explorer links
 
 ## License
 
