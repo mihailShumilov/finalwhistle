@@ -1,0 +1,14 @@
+**/node_modules
+**/dist
+**/.next
+**/.open-next
+**/.wrangler
+**/target
+**/.turbo
+**/coverage
+.git
+.keys
+**/*.log
+**/.env
+**/.env.local
+test-ledger

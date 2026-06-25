@@ -12,6 +12,11 @@ allowBuilds:
   utf-8-validate: false
   sharp: false
   workerd: true
+  "@stellar/stellar-sdk": false
+  blake-hash: false
+  protobufjs: false
+  tiny-secp256k1: false
+  usb: false
 
 minimumReleaseAgeExclude:
   - "@types/node@26.0.1"

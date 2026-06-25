@@ -19,7 +19,8 @@
       "!idl/finalwhistle.ts",
       "!**/finalwhistle.types.ts",
       "!**/finalwhistle.idl.ts",
-      "!**/*.json"
+      "!**/*.json",
+      "!**/globals.css"
     ]
   },
   "formatter": {
@@ -36,8 +37,7 @@
         "noExplicitAny": "error"
       },
       "style": {
-        "useConst": "error",
-        "noNonNullAssertion": "off"
+        "useConst": "error"
       }
     }
   },

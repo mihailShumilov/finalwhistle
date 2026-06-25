@@ -1,0 +1,63 @@
+name: finalwhistle
+
+# FinalWhistle reserves the 779x app block and the 189xx Solana block (CLAUDE.md §7) so the
+# local stack never collides with other projects' default 3000/8899/5432/6379.
+
+services:
+  validator:
+    image: anzaxyz/agave:v3.1.14
+    command: >
+      solana-test-validator
+      --rpc-port 18899 --faucet-port 19900 --bind-address 0.0.0.0 --reset
+    ports:
+      - "18899:18899" # RPC
+      - "18900:18900" # WebSocket
+      - "19900:19900" # faucet
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:18899 -X POST -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"getHealth\"}' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    ports:
+      - "7791:7791"
+    environment:
+      CLUSTER: devnet
+      RPC_PRIMARY: https://api.devnet.solana.com
+      RPC_BACKUP: https://api.devnet.solana.com
+      TXLINE_PROGRAM_ID: 6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J
+      TXLINE_API_BASE: https://txline-dev.txodds.com
+      WEB_ORIGIN: http://localhost:7790
+
+  keeper:
+    build:
+      context: .
+      dockerfile: apps/keeper/Dockerfile
+    ports:
+      - "7792:7792"
+    environment:
+      CLUSTER: devnet
+      RPC_PRIMARY: https://api.devnet.solana.com
+      RPC_BACKUP: https://api.devnet.solana.com
+      TXLINE_PROGRAM_ID: 6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J
+      TXLINE_API_BASE: https://txline-dev.txodds.com
+    # Secrets (KEEPER_SECRET_KEY, TXLINE_JWT, TXLINE_API_TOKEN) injected at runtime.
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    ports:
+      - "7790:7790"
+    environment:
+      NEXT_PUBLIC_CLUSTER: devnet
+      NEXT_PUBLIC_RPC: https://api.devnet.solana.com
+      NEXT_PUBLIC_RPC_BACKUP: https://api.devnet.solana.com
+      NEXT_PUBLIC_API_BASE: http://localhost:7791
+      NEXT_PUBLIC_FINALWHISTLE_PROGRAM_ID: GSud9smJwwV6QhDLd2hmSQPShj1w8zYumz5BL3snbmao
+    depends_on:
+      - api

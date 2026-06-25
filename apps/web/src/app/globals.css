@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+@theme {
+  --color-pitch: #0a0e0a;
+  --color-pitch-2: #0f1511;
+  --color-line: #1c2620;
+  --color-grass: #16a34a;
+  --color-grass-bright: #22c55e;
+  --color-chalk: #e8f0e8;
+  --color-muted: #8aa090;
+  --color-no: #f43f5e;
+  --color-yes: #22c55e;
+  --font-display: "Geist", ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background:
+    radial-gradient(1200px 600px at 50% -10%, #11301c 0%, transparent 60%), var(--color-pitch);
+  color: var(--color-chalk);
+  font-family: var(--font-display);
+  min-height: 100vh;
+}
+
+.card {
+  background: linear-gradient(180deg, var(--color-pitch-2), #0b100c);
+  border: 1px solid var(--color-line);
+  border-radius: 1rem;
+}
+
+.btn {
+  border-radius: 0.625rem;
+  padding: 0.55rem 1rem;
+  font-weight: 600;
+  transition: all 0.15s ease;
+  border: 1px solid var(--color-line);
+}
+.btn:hover {
+  border-color: var(--color-grass);
+}
+.btn-primary {
+  background: var(--color-grass);
+  color: #06140c;
+  border-color: var(--color-grass-bright);
+}
+.btn-primary:hover {
+  background: var(--color-grass-bright);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* Wallet adapter button — match the theme (the adapter sets its own base styles). */
+.wallet-adapter-button-trigger {
+  background: var(--color-grass);
+  color: #06140c;
+  border-radius: 0.625rem;
+  font-weight: 600;
+}
+
+.mono {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
