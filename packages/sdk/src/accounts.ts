@@ -4,11 +4,20 @@ import type { ResilientRpcPool } from "solana-resilience-kit";
 
 type Rpc = ReturnType<ResilientRpcPool["rpc"]>;
 
+const camel = (s: string): string => s.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
+
+/** Shallow-camelCase top-level keys (BorshAccountsCoder returns raw snake_case IDL names). */
+function camelizeTop(obj: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj)) out[camel(k)] = v;
+  return out;
+}
+
 /** Decode an account name with either IDL casing (PascalCase) or the camelCase accessor. */
 function decode<T>(coder: anchor.BorshAccountsCoder, names: string[], data: Buffer): T {
   for (const name of names) {
     try {
-      return coder.decode(name, data) as T;
+      return camelizeTop(coder.decode(name, data) as Record<string, unknown>) as T;
     } catch {
       /* try next casing */
     }
@@ -61,6 +70,12 @@ export function makeAccountsCoder(idl: anchor.Idl): anchor.BorshAccountsCoder {
   return new anchor.BorshAccountsCoder(idl);
 }
 
+/** The active variant of a decoded Anchor enum, as camelCase (e.g. `{GreaterThan:{}}` → "greaterThan"). */
+export function enumKey(value: Record<string, unknown>): string {
+  const key = Object.keys(value)[0] ?? "unknown";
+  return key.charAt(0).toLowerCase() + key.slice(1);
+}
+
 export async function fetchMarket(
   rpc: Rpc,
   coder: anchor.BorshAccountsCoder,
@@ -77,4 +92,73 @@ export async function fetchPosition(
 ): Promise<PositionAccount | null> {
   const data = await getAccountData(rpc, address(positionAddress));
   return data ? decode<PositionAccount>(coder, ["position", "Position"], data) : null;
+}
+
+/** List every FinalWhistle market via the resilient pool and decode it (positions skipped). */
+export async function scanMarkets(
+  rpc: Rpc,
+  coder: anchor.BorshAccountsCoder,
+  programId: string,
+): Promise<{ address: string; market: MarketAccount }[]> {
+  const accounts = await rpc.getProgramAccounts(address(programId), { encoding: "base64" }).send();
+  const out: { address: string; market: MarketAccount }[] = [];
+  for (const { pubkey, account } of accounts) {
+    const data = Buffer.from(account.data[0], "base64");
+    try {
+      out.push({
+        address: pubkey.toString(),
+        market: decode<MarketAccount>(coder, ["market", "Market"], data),
+      });
+    } catch {
+      /* not a market (e.g. a position) */
+    }
+  }
+  return out;
+}
+
+/** A UI/API-friendly, JSON-serialisable view of a market. */
+export interface MarketSummary {
+  address: string;
+  title: string;
+  status: string;
+  fixtureId: number;
+  seq: number;
+  statKey: number;
+  statKey2: number | null;
+  op: "add" | "subtract" | null;
+  period: number;
+  threshold: number;
+  comparison: "greaterThan" | "lessThan";
+  closeTs: number;
+  yesPool: string;
+  noPool: string;
+  feeBps: number;
+  winningSide: number;
+  settleTs: number;
+  settleSlot: number;
+  usdcMint: string;
+}
+
+export function summarizeMarket(address: string, m: MarketAccount): MarketSummary {
+  return {
+    address,
+    title: m.title,
+    status: enumKey(m.status),
+    fixtureId: m.fixtureId.toNumber(),
+    seq: m.seq,
+    statKey: m.statKey,
+    statKey2: m.statKey2,
+    op: m.op ? (enumKey(m.op) === "add" ? "add" : "subtract") : null,
+    period: m.period,
+    threshold: m.threshold,
+    comparison: enumKey(m.comparison) === "greaterThan" ? "greaterThan" : "lessThan",
+    closeTs: m.closeTs.toNumber(),
+    yesPool: m.yesPool.toString(),
+    noPool: m.noPool.toString(),
+    feeBps: m.feeBps,
+    winningSide: m.winningSide,
+    settleTs: m.settleTs.toNumber(),
+    settleSlot: m.settleSlot.toNumber(),
+    usdcMint: m.usdcMint.toBase58(),
+  };
 }

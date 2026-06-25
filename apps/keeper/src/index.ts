@@ -1,4 +1,4 @@
-import { describePredicate, impliedYesProbability } from "@finalwhistle/sdk";
+import { describePredicate, impliedYesProbability, summarizeMarket } from "@finalwhistle/sdk";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { buildContext, type KeeperContext, type KeeperEnv } from "./context.js";
@@ -28,29 +28,23 @@ app.get("/markets", async (c) => {
   const ctx = await buildContext(c.env);
   const markets = await scanMarkets(ctx.pool, ctx.coder);
   return c.json(
-    markets.map(({ address, market }) => ({
-      address,
-      title: market.title,
-      predicate: describePredicate({
-        fixtureId: market.fixtureId.toNumber(),
-        seq: market.seq,
-        statKey: market.statKey,
-        ...(market.statKey2 !== null ? { statKey2: market.statKey2 } : {}),
-        ...(market.op ? { op: "subtract" in market.op ? "subtract" : "add" } : {}),
-        period: market.period,
-        threshold: market.threshold,
-        comparison: "greaterThan" in market.comparison ? "greaterThan" : "lessThan",
-      }),
-      status: Object.keys(market.status)[0],
-      yesPool: market.yesPool.toString(),
-      noPool: market.noPool.toString(),
-      impliedYes: impliedYesProbability(
-        BigInt(market.yesPool.toString()),
-        BigInt(market.noPool.toString()),
-      ),
-      closeTs: market.closeTs.toNumber(),
-      winningSide: market.winningSide,
-    })),
+    markets.map(({ address, market }) => {
+      const s = summarizeMarket(address, market);
+      return {
+        ...s,
+        predicate: describePredicate({
+          fixtureId: s.fixtureId,
+          seq: s.seq,
+          statKey: s.statKey,
+          ...(s.statKey2 !== null ? { statKey2: s.statKey2 } : {}),
+          ...(s.op ? { op: s.op } : {}),
+          period: s.period,
+          threshold: s.threshold,
+          comparison: s.comparison,
+        }),
+        impliedYes: impliedYesProbability(BigInt(s.yesPool), BigInt(s.noPool)),
+      };
+    }),
   );
 });
 

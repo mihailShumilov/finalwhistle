@@ -2,6 +2,7 @@ import type * as anchor from "@coral-xyz/anchor";
 import {
   buildSettleIx,
   buildSettleProof,
+  enumKey,
   epochDayForValidation,
   fetchMarket,
   fetchStatValidation,
@@ -36,7 +37,7 @@ export interface SettleOutcome {
 }
 
 function statusKey(status: Record<string, unknown>): string {
-  return Object.keys(status)[0] ?? "unknown";
+  return enumKey(status);
 }
 
 /**

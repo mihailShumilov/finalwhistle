@@ -1,0 +1,27 @@
+name = "finalwhistle-api"
+main = "src/index.ts"
+compatibility_date = "2026-06-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Odds / receipt cache.
+[[kv_namespaces]]
+binding = "CACHE"
+id = "PLACEHOLDER_KV_ID"
+
+# Shared with the keeper: settled-market signatures for receipts.
+[[kv_namespaces]]
+binding = "SETTLED"
+id = "PLACEHOLDER_KV_ID"
+
+[vars]
+CLUSTER = "devnet"
+RPC_PRIMARY = "https://api.devnet.solana.com"
+RPC_BACKUP = "https://api.devnet.solana.com"
+TXLINE_PROGRAM_ID = "6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J"
+TXLINE_API_BASE = "https://txline-dev.txodds.com"
+WEB_ORIGIN = "*"
+
+# Secrets: TXLINE_JWT, TXLINE_API_TOKEN (for receipt proof re-fetch)
+
+[dev]
+port = 7791

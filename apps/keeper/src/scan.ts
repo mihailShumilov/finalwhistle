@@ -1,5 +1,5 @@
 import type * as anchor from "@coral-xyz/anchor";
-import { FINALWHISTLE_PROGRAM, type MarketAccount } from "@finalwhistle/sdk";
+import { enumKey, FINALWHISTLE_PROGRAM, type MarketAccount } from "@finalwhistle/sdk";
 import { address } from "@solana/kit";
 import type { ResilientRpcPool } from "solana-resilience-kit";
 
@@ -39,5 +39,7 @@ export async function scanMarkets(
 
 /** Markets that are open and whose betting window has closed → ready to settle. */
 export function dueForSettlement(markets: ScannedMarket[], nowSec = Math.floor(Date.now() / 1000)) {
-  return markets.filter((m) => "open" in m.market.status && nowSec >= m.market.closeTs.toNumber());
+  return markets.filter(
+    (m) => enumKey(m.market.status) === "open" && nowSec >= m.market.closeTs.toNumber(),
+  );
 }
