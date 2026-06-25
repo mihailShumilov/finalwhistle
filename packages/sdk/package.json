@@ -1,0 +1,41 @@
+{
+  "name": "@finalwhistle/sdk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "FinalWhistle TS SDK — @solana/kit + solana-resilience-kit for all RPC reads and tx sends.",
+  "license": "MIT",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "0.32.1",
+    "@finalwhistle/shared": "workspace:*",
+    "@solana/kit": "6.10.0",
+    "@solana/web3.js": "1.98.4",
+    "bn.js": "5.2.3",
+    "solana-resilience-kit": "1.2.0",
+    "tweetnacl": "1.0.3",
+    "@solana/spl-token": "0.4.14"
+  },
+  "devDependencies": {
+    "@types/bn.js": "5.2.0",
+    "@types/node": "26.0.1",
+    "typescript": "6.0.3",
+    "vitest": "4.1.9"
+  }
+}

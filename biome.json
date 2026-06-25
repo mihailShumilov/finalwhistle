@@ -16,6 +16,9 @@
       "!**/target",
       "!**/node_modules",
       "!idl/txoracle.ts",
+      "!idl/finalwhistle.ts",
+      "!**/finalwhistle.types.ts",
+      "!**/finalwhistle.idl.ts",
       "!**/*.json"
     ]
   },
