@@ -1,0 +1,33 @@
+[toolchain]
+package_manager = "pnpm"
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.localnet]
+finalwhistle = "GSud9smJwwV6QhDLd2hmSQPShj1w8zYumz5BL3snbmao"
+
+[programs.devnet]
+finalwhistle = "GSud9smJwwV6QhDLd2hmSQPShj1w8zYumz5BL3snbmao"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "localnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "pnpm --filter @finalwhistle/tests test"
+
+# FinalWhistle reserves the 189xx Solana port block (see CLAUDE.md §7) so the local
+# validator never collides with other projects' default 8899/8900/9900.
+[test.validator]
+rpc_port = 18899
+bind_address = "0.0.0.0"
+
+[test]
+startup_wait = 20000
+
+[hooks]

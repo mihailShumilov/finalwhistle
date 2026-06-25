@@ -1,0 +1,7 @@
+# Pinned to the toolchain proven to build with Anchor 1.0.2 + Agave platform-tools
+# on the build machine. The on-chain (SBF) artifact is compiled by the platform-tools
+# bundled rustc; this host channel only drives proc-macros / build scripts / clippy.
+[toolchain]
+channel = "1.93.0"
+components = ["rustfmt", "clippy"]
+profile = "minimal"

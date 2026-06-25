@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Rust / Anchor
+target/
+**/*.rs.bk
+.anchor/
+test-ledger/
+
+# Build output
+dist/
+.next/
+out/
+.turbo/
+.open-next/
+.wrangler/
+
+# Secrets & keys (never commit keypairs — program ID is pinned in declare_id/Anchor.toml)
+.env
+.env.local
+.env.*.local
+.keys/
+*-keypair.json
+wallet.json
+
+# OS / editor
+.DS_Store
+*.log
+.idea/
+.vscode/
+coverage/
+
+# Misc
+*.tsbuildinfo
