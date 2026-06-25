@@ -53,7 +53,11 @@ pub struct CreateMarket<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn create_market_handler(ctx: Context<CreateMarket>, nonce: u64, params: CreateMarketParams) -> Result<()> {
+pub fn create_market_handler(
+    ctx: Context<CreateMarket>,
+    nonce: u64,
+    params: CreateMarketParams,
+) -> Result<()> {
     require!(params.fee_bps <= MAX_FEE_BPS, FinalWhistleError::FeeTooHigh);
     require!(params.title.len() <= 80, FinalWhistleError::MathOverflow);
 

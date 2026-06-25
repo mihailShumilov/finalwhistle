@@ -50,4 +50,12 @@ pub enum FinalWhistleError {
     EqualityNotSupported,
     #[msg("Settlement has not waited for Solana finality")]
     FinalityNotReached,
+    #[msg("The TxLINE validate_stat CPI returned no data")]
+    OracleNoReturnData,
+    #[msg("A two-stat market requires a second stat term and operator at settlement")]
+    MissingSecondStat,
+    #[msg("A single-stat market must not receive a second stat term or operator")]
+    UnexpectedSecondStat,
+    #[msg("The binary operator does not match the market's predicate")]
+    OperatorMismatch,
 }

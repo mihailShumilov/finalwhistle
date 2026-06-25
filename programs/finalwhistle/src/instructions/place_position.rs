@@ -49,11 +49,17 @@ pub fn place_position_handler(ctx: Context<PlacePosition>, side: u8, amount: u64
         ctx.accounts.market.status == MarketStatus::Open,
         FinalWhistleError::MarketNotOpen
     );
-    require!(side == SIDE_YES || side == SIDE_NO, FinalWhistleError::InvalidSide);
+    require!(
+        side == SIDE_YES || side == SIDE_NO,
+        FinalWhistleError::InvalidSide
+    );
     require!(amount >= MIN_STAKE, FinalWhistleError::StakeTooSmall);
 
     let now = Clock::get()?.unix_timestamp;
-    require!(now < ctx.accounts.market.close_ts, FinalWhistleError::MarketClosed);
+    require!(
+        now < ctx.accounts.market.close_ts,
+        FinalWhistleError::MarketClosed
+    );
 
     // Move USDC into escrow before recording the stake (effects after the external CPI is
     // safe here because the transfer either fully succeeds or the whole ix reverts).

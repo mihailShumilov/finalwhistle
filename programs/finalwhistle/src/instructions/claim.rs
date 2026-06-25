@@ -49,7 +49,10 @@ pub fn claim_handler(ctx: Context<Claim>) -> Result<()> {
         ctx.accounts.claimant.key() == ctx.accounts.position.owner,
         FinalWhistleError::NothingToClaim
     );
-    require!(!ctx.accounts.position.claimed, FinalWhistleError::AlreadyClaimed);
+    require!(
+        !ctx.accounts.position.claimed,
+        FinalWhistleError::AlreadyClaimed
+    );
 
     let payout: u64 = match market.status {
         MarketStatus::Resolved => ctx.accounts.position.payout(

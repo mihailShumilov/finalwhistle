@@ -40,3 +40,8 @@ pub const MIN_STAKE: u64 = 10_000;
 pub const SIDE_NONE: u8 = 0;
 pub const SIDE_YES: u8 = 1;
 pub const SIDE_NO: u8 = 2;
+
+/// The TxLINE (`txoracle`) program id we CPI into for settlement. This is the **devnet**
+/// address — FinalWhistle's hackathon target — and the same address is cloned into the local
+/// test validator. A mainnet build must change this constant (and redeploy).
+pub const TXLINE_PROGRAM_ID: Pubkey = pubkey!("6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J");

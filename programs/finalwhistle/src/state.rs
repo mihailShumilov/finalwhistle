@@ -194,7 +194,12 @@ impl Position {
     }
 
     /// Pro-rata winnings = `winning_stake * total_payout_pool / winning_pool` (u128 math).
-    pub fn payout(&self, winning_side: u8, winning_pool: u64, total_payout_pool: u64) -> Result<u64> {
+    pub fn payout(
+        &self,
+        winning_side: u8,
+        winning_pool: u64,
+        total_payout_pool: u64,
+    ) -> Result<u64> {
         if winning_pool == 0 {
             return Ok(0);
         }
