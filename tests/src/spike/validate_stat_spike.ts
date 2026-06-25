@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import * as anchor from "@coral-xyz/anchor";
-import { hashToBytes } from "@finalwhistle/shared";
+import { hashToBytes, type ProofNode } from "@finalwhistle/shared";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   getAssociatedTokenAddressSync,
@@ -9,6 +9,7 @@ import {
   TOKEN_2022_PROGRAM_ID,
 } from "@solana/spl-token";
 import { ComputeBudgetProgram, Connection, PublicKey, SystemProgram } from "@solana/web3.js";
+import BN from "bn.js";
 import rawIdl from "../../../idl/txoracle.json" with { type: "json" };
 import type { Txoracle } from "../../../idl/txoracle.ts";
 import {
@@ -27,8 +28,7 @@ import { activate, fetchStatValidation, guestAuth } from "./txline-api.ts";
 
 const CU_LIMIT = 1_400_000; // validate_stat recomputes the full Merkle path → max CU.
 
-type ProofNodeApi = { hash: string; isRightSibling: boolean };
-const toProof = (nodes: ProofNodeApi[]) =>
+const toProof = (nodes: ProofNode[]) =>
   nodes.map((n) => ({ hash: hashToBytes(n.hash), isRightSibling: n.isRightSibling }));
 
 function buildProgram(): anchor.Program<Txoracle> {
@@ -106,6 +106,11 @@ async function main(): Promise<void> {
   );
   console.log("✓ API token activated");
 
+  // Cache the session so discovery/exploration can reuse it without re-subscribing.
+  const sessionFile = resolve(process.cwd(), "../.keys/txline-session.json");
+  writeFileSync(sessionFile, `${JSON.stringify({ jwt, apiToken, apiBase: API_BASE }, null, 2)}\n`);
+  console.log(`  (session cached → ${sessionFile})`);
+
   // 4. Fetch the three-stage proof (single + second stat).
   const validation = await fetchStatValidation(API_BASE, jwt, apiToken, TARGET);
   console.log(
@@ -115,10 +120,13 @@ async function main(): Promise<void> {
         : ""),
   );
 
-  // 5. Derive the daily-scores-roots PDA for the proof's epoch day.
-  const epochDay = Math.floor(validation.ts / (24 * 60 * 60 * 1000));
+  // 5. Derive the daily-scores-roots PDA. The canonical timestamp for both PDA seed and the
+  //    validate_stat `ts` arg is the batch's `minTimestamp` (the snapshot-payload timestamp);
+  //    passing `validation.ts` instead trips the program's TimestampMismatch (6010) check.
+  const targetTs = validation.summary.updateStats.minTimestamp;
+  const epochDay = Math.floor(targetTs / (24 * 60 * 60 * 1000));
   const [dailyScoresRoots] = PublicKey.findProgramAddressSync(
-    [Buffer.from("daily_scores_roots"), new anchor.BN(epochDay).toArrayLike(Buffer, "le", 2)],
+    [Buffer.from("daily_scores_roots"), new BN(epochDay).toArrayLike(Buffer, "le", 2)],
     program.programId,
   );
   const rootsInfo = await provider.connection.getAccountInfo(dailyScoresRoots);
@@ -126,11 +134,11 @@ async function main(): Promise<void> {
   console.log(`✓ daily_scores_roots ${dailyScoresRoots.toBase58()} (epoch day ${epochDay})`);
 
   const fixtureSummary = {
-    fixtureId: new anchor.BN(validation.summary.fixtureId),
+    fixtureId: new BN(validation.summary.fixtureId),
     updateStats: {
       updateCount: validation.summary.updateStats.updateCount,
-      minTimestamp: new anchor.BN(validation.summary.updateStats.minTimestamp),
-      maxTimestamp: new anchor.BN(validation.summary.updateStats.maxTimestamp),
+      minTimestamp: new BN(validation.summary.updateStats.minTimestamp),
+      maxTimestamp: new BN(validation.summary.updateStats.maxTimestamp),
     },
     eventsSubTreeRoot: hashToBytes(validation.summary.eventStatsSubTreeRoot),
   };
@@ -143,95 +151,116 @@ async function main(): Promise<void> {
   };
   const cuIx = ComputeBudgetProgram.setComputeUnitLimit({ units: CU_LIMIT });
 
-  // 6. Single-stat validation — a TRUE predicate (value > value-1) must land.
-  const truePredicate = {
-    threshold: validation.statToProve.value - 1,
-    comparison: { greaterThan: {} },
-  };
-  const sig1 = await program.methods
-    .validateStat(
-      new anchor.BN(validation.ts),
-      fixtureSummary,
-      fixtureProof,
-      mainTreeProof,
-      truePredicate,
-      statA,
-      null,
-      null,
-    )
-    .accountsPartial({ dailyScoresMerkleRoots: dailyScoresRoots })
-    .preInstructions([cuIx])
-    .rpc();
-  console.log(`✓ single-stat validate_stat landed: ${sig1}`);
+  type Empty = Record<string, never>;
+  type Comparison = { greaterThan: Empty } | { lessThan: Empty } | { equalTo: Empty };
+  type BinOp = { add: Empty } | { subtract: Empty };
+  type Predicate = { threshold: number; comparison: Comparison };
+  type StatTerm = typeof statA;
 
-  // 7. Negative — a FALSE predicate (value > value) must revert (no return value ⇒ revert-on-false).
-  let reverted = false;
-  try {
-    const falsePredicate = {
-      threshold: validation.statToProve.value,
-      comparison: { greaterThan: {} },
-    };
-    await program.methods
+  const buildIx = (predicate: Predicate, a: StatTerm, b: StatTerm | null, op: BinOp | null) =>
+    program.methods
       .validateStat(
-        new anchor.BN(validation.ts),
+        new BN(targetTs),
         fixtureSummary,
         fixtureProof,
         mainTreeProof,
-        falsePredicate,
-        statA,
-        null,
-        null,
+        predicate,
+        a,
+        b,
+        op,
       )
       .accountsPartial({ dailyScoresMerkleRoots: dailyScoresRoots })
-      .preInstructions([cuIx])
-      .rpc();
-  } catch {
-    reverted = true;
-  }
-  console.log(`✓ false predicate reverted: ${reverted}`);
-  if (!reverted)
-    throw new Error("CRITICAL: false predicate did NOT revert — settle design assumption broken");
+      .preInstructions([cuIx]);
 
-  // 8. Two-stat validation (if a second stat was returned).
+  // Read the boolean predicate result from validate_stat's return data via simulation.
+  // KEY FINDING: validate_stat does NOT revert on a false predicate — it verifies the Merkle
+  // proof (reverting only on a tampered/invalid proof) and writes the predicate result as a
+  // 1-byte bool to return_data. Our settle path therefore CPIs validate_stat, then reads the
+  // returned bool to determine the winning side. The caller cannot influence the outcome.
+  async function readPredicate(
+    predicate: Predicate,
+    a: StatTerm,
+    b: StatTerm | null,
+    op: BinOp | null,
+  ): Promise<boolean | null> {
+    const tx = await buildIx(predicate, a, b, op).transaction();
+    const sim = await provider.simulate(tx, [wallet.payer]);
+    const rd = sim.returnData;
+    if (!rd) return null;
+    return Buffer.from(rd.data[0], "base64")[0] === 1;
+  }
+
+  // 6. Single-stat: a TRUE predicate (value > value-1) lands AND its return bool is true.
+  const v = validation.statToProve.value;
+  const truePredicate: Predicate = { threshold: v - 1, comparison: { greaterThan: {} } };
+  const falsePredicate: Predicate = { threshold: v, comparison: { greaterThan: {} } };
+
+  const sig1 = await buildIx(truePredicate, statA, null, null).rpc();
+  console.log(`✓ single-stat validate_stat landed: ${sig1}`);
+
+  const trueResult = await readPredicate(truePredicate, statA, null, null);
+  const falseResult = await readPredicate(falsePredicate, statA, null, null);
+  console.log(`✓ return-data bool: true-predicate=${trueResult}  false-predicate=${falseResult}`);
+  if (trueResult !== true || falseResult !== false) {
+    throw new Error(
+      `CRITICAL: validate_stat return-data semantics unexpected (true=${trueResult}, false=${falseResult})`,
+    );
+  }
+
+  // 7. Security boundary — a TAMPERED proof must revert (this, not the predicate, is what
+  //    protects settlement). Flip one byte of the event-stat root.
+  const tamperedStatA: StatTerm = {
+    ...statA,
+    eventStatRoot: statA.eventStatRoot.map((byte, i) => (i === 0 ? byte ^ 0xff : byte)),
+  };
+  let tamperReverted = false;
+  try {
+    await readPredicate(truePredicate, tamperedStatA, null, null);
+  } catch {
+    tamperReverted = true;
+  }
+  console.log(`✓ tampered proof reverted: ${tamperReverted}`);
+  if (!tamperReverted) {
+    throw new Error("CRITICAL: tampered proof did NOT revert — settlement would be forgeable");
+  }
+
+  // 8. Two-stat validation (if a second stat was returned) — land + read the diff predicate.
   let sig2: string | null = null;
+  let twoStatResult: boolean | null = null;
   if (validation.statToProve2 && validation.statProof2) {
-    const statB = {
+    const statB: StatTerm = {
       statToProve: validation.statToProve2,
       eventStatRoot: hashToBytes(validation.eventStatRoot),
       statProof: toProof(validation.statProof2),
     };
     const diff = validation.statToProve.value - validation.statToProve2.value;
-    const twoStatPredicate = { threshold: diff + 1, comparison: { lessThan: {} } }; // diff < diff+1 ⇒ true
-    sig2 = await program.methods
-      .validateStat(
-        new anchor.BN(validation.ts),
-        fixtureSummary,
-        fixtureProof,
-        mainTreeProof,
-        twoStatPredicate,
-        statA,
-        statB,
-        { subtract: {} },
-      )
-      .accountsPartial({ dailyScoresMerkleRoots: dailyScoresRoots })
-      .preInstructions([cuIx])
-      .rpc();
-    console.log(`✓ two-stat validate_stat landed: ${sig2}`);
+    const twoStatPredicate: Predicate = { threshold: diff + 1, comparison: { lessThan: {} } };
+    sig2 = await buildIx(twoStatPredicate, statA, statB, { subtract: {} }).rpc();
+    twoStatResult = await readPredicate(twoStatPredicate, statA, statB, { subtract: {} });
+    console.log(`✓ two-stat validate_stat landed: ${sig2} (diff<${diff + 1} ⇒ ${twoStatResult})`);
   }
 
-  // 9. Persist the golden vector (raw proof + the predicates we proved + tx signatures).
+  // 9. Persist the golden vector (raw proof + proven predicates + tx signatures + semantics).
   const golden = {
     capturedAtTs: validation.ts,
+    canonicalTs: targetTs,
     cluster: "devnet",
     programId: program.programId.toBase58(),
     dailyScoresRoots: dailyScoresRoots.toBase58(),
     epochDay,
     target: TARGET,
     validation,
+    semantics: {
+      revertsOnFalsePredicate: false,
+      returnsBoolViaReturnData: true,
+      revertsOnTamperedProof: tamperReverted,
+    },
     proved: {
-      singleStat: { predicate: truePredicate, signature: sig1 },
-      falsePredicateReverted: reverted,
-      twoStat: sig2 ? { op: "subtract", comparison: "lessThan", signature: sig2 } : null,
+      singleStat: { predicate: truePredicate, result: trueResult, signature: sig1 },
+      falsePredicate: { predicate: falsePredicate, result: falseResult },
+      twoStat: sig2
+        ? { op: "subtract", comparison: "lessThan", result: twoStatResult, signature: sig2 }
+        : null,
     },
   };
   const outDir = resolve(process.cwd(), "golden");
@@ -240,7 +269,8 @@ async function main(): Promise<void> {
   writeFileSync(outFile, `${JSON.stringify(golden, null, 2)}\n`);
   console.log(`✓ golden vector written: ${outFile}`);
   console.log(
-    "\n🎉 Phase-1 spike complete — validate_stat is CPI-ready and revert-on-false confirmed.",
+    "\n🎉 Phase-1 spike complete — validate_stat verified on devnet: predicate result via" +
+      " return-data, tampered proof reverts. settle() reads the returned bool.",
   );
 }
 

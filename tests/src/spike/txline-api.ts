@@ -62,8 +62,15 @@ export async function activate(
     },
     "activate",
   );
-  const body = (await res.json()) as { token?: string } | string;
-  return typeof body === "string" ? body : (body.token ?? JSON.stringify(body));
+  // The activate endpoint returns the API token as plain text (e.g. `txoracle_api_...`),
+  // not JSON — handle both shapes.
+  const text = (await res.text()).trim();
+  try {
+    const json = JSON.parse(text) as { token?: string };
+    return json.token ?? text;
+  } catch {
+    return text;
+  }
 }
 
 export interface StatValidationQuery {

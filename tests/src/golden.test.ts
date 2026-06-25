@@ -61,26 +61,61 @@ describe("golden vector — encoding determinism", () => {
  * validate_stat agree on the real proof.
  */
 const liveFile = resolve(GOLDEN_DIR, "stat_validation.devnet.json");
-describe.skipIf(!existsSync(liveFile))("golden vector — live devnet validate_stat", () => {
-  it("the proved single-stat predicate is consistent with the proven value", () => {
-    const golden = load<{
-      validation: ScoresStatValidation;
-      proved: {
-        singleStat: {
-          predicate: { threshold: number; comparison: Record<string, unknown> };
-          signature: string;
-        };
-        falsePredicateReverted: boolean;
-      };
-    }>("stat_validation.devnet.json");
 
-    const v = golden.validation;
-    const cmp: "greaterThan" | "lessThan" =
-      "greaterThan" in golden.proved.singleStat.predicate.comparison ? "greaterThan" : "lessThan";
-    const thr = golden.proved.singleStat.predicate.threshold;
-    const holds = cmp === "greaterThan" ? v.statToProve.value > thr : v.statToProve.value < thr;
-    expect(holds).toBe(true);
-    expect(golden.proved.singleStat.signature).toMatch(/^[1-9A-HJ-NP-Za-km-z]+$/);
-    expect(golden.proved.falsePredicateReverted).toBe(true);
+interface GoldenVector {
+  canonicalTs: number;
+  validation: ScoresStatValidation;
+  semantics: {
+    revertsOnFalsePredicate: boolean;
+    returnsBoolViaReturnData: boolean;
+    revertsOnTamperedProof: boolean;
+  };
+  proved: {
+    singleStat: {
+      predicate: { threshold: number; comparison: Record<string, unknown> };
+      result: boolean;
+      signature: string;
+    };
+    falsePredicate: {
+      predicate: { threshold: number; comparison: Record<string, unknown> };
+      result: boolean;
+    };
+    twoStat: { result: boolean; signature: string } | null;
+  };
+}
+
+const SIG = /^[1-9A-HJ-NP-Za-km-z]{64,}$/;
+const evalPredicate = (
+  value: number,
+  p: { threshold: number; comparison: Record<string, unknown> },
+) => ("greaterThan" in p.comparison ? value > p.threshold : value < p.threshold);
+
+describe.skipIf(!existsSync(liveFile))("golden vector — live devnet validate_stat", () => {
+  const golden = existsSync(liveFile) ? load<GoldenVector>("stat_validation.devnet.json") : null;
+
+  it("captured the validate_stat security/return semantics our settle path relies on", () => {
+    if (!golden) return;
+    // settle() depends on exactly these three facts (proven on devnet by the spike):
+    expect(golden.semantics.revertsOnFalsePredicate).toBe(false); // result comes from return-data
+    expect(golden.semantics.returnsBoolViaReturnData).toBe(true); // settle reads the bool
+    expect(golden.semantics.revertsOnTamperedProof).toBe(true); // tamper-proof boundary
+  });
+
+  it("the returned booleans match an independent off-chain evaluation of the same value", () => {
+    if (!golden) return;
+    const value = golden.validation.statToProve.value;
+    expect(evalPredicate(value, golden.proved.singleStat.predicate)).toBe(
+      golden.proved.singleStat.result,
+    );
+    expect(evalPredicate(value, golden.proved.falsePredicate.predicate)).toBe(
+      golden.proved.falsePredicate.result,
+    );
+    expect(golden.proved.singleStat.signature).toMatch(SIG);
+    if (golden.proved.twoStat) expect(golden.proved.twoStat.signature).toMatch(SIG);
+  });
+
+  it("the canonical settle timestamp is the batch minTimestamp", () => {
+    if (!golden) return;
+    expect(golden.canonicalTs).toBe(golden.validation.summary.updateStats.minTimestamp);
   });
 });

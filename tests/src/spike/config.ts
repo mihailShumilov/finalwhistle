@@ -31,12 +31,14 @@ export const SUBSCRIPTION_WEEKS = Number(process.env.TXLINE_WEEKS ?? 4);
 export const SELECTED_LEAGUES: number[] = [];
 
 /**
- * Target fixture/seq/stat for the proof. Defaults mirror the TxLINE on-chain example;
- * override via env when devnet data coverage moves.
+ * Target fixture/seq/stat for the proof. Default = a finished World Cup group-stage fixture
+ * in the free SL-1 bundle (South Africa 1–0 South Korea, CompetitionId 72), discovered from
+ * the live devnet feed. The example's fixture (17271370) is competition 500005 and is denied
+ * for the free tier. Override via env when devnet coverage moves.
  */
 export const TARGET = {
-  fixtureId: Number(process.env.SPIKE_FIXTURE_ID ?? 17271370),
-  seq: Number(process.env.SPIKE_SEQ ?? 401),
+  fixtureId: Number(process.env.SPIKE_FIXTURE_ID ?? 17588395),
+  seq: Number(process.env.SPIKE_SEQ ?? 980),
   statKey: Number(process.env.SPIKE_STAT_KEY ?? 1),
   statKey2: Number(process.env.SPIKE_STAT_KEY2 ?? 2),
 };

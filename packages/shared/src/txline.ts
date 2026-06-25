@@ -5,8 +5,15 @@
  * API; the SDK converts them to `[u8; 32]` byte arrays for the on-chain call.
  */
 
+/**
+ * A 32-byte hash as returned by the TxLINE API. The OpenAPI schema documents these as
+ * `format: binary` (hex string), but the devnet endpoint returns them as raw byte arrays
+ * (`number[32]`). We accept both shapes everywhere.
+ */
+export type Hash = string | number[];
+
 export interface ProofNode {
-  hash: string;
+  hash: Hash;
   isRightSibling: boolean;
 }
 
@@ -25,14 +32,14 @@ export interface ScoresUpdateStats {
 export interface ScoresBatchSummary {
   fixtureId: number;
   updateStats: ScoresUpdateStats;
-  eventStatsSubTreeRoot: string;
+  eventStatsSubTreeRoot: Hash;
 }
 
 /** Full `GET /api/scores/stat-validation` response (single- or two-stat). */
 export interface ScoresStatValidation {
   ts: number;
   statToProve: ScoreStat;
-  eventStatRoot: string;
+  eventStatRoot: Hash;
   summary: ScoresBatchSummary;
   statProof: ProofNode[];
   subTreeProof: ProofNode[];
@@ -107,8 +114,17 @@ export function epochDayFromMs(tsMillis: number): number {
   return Math.floor(tsMillis / (24 * 60 * 60 * 1000));
 }
 
-/** Convert an API hash string to a 32-byte array for the on-chain ProofNode. */
-export function hashToBytes(hash: string): number[] {
+/**
+ * Normalise an API hash to a 32-byte array for the on-chain ProofNode. Accepts either a raw
+ * byte array (devnet shape) or a hex string (OpenAPI `binary` shape, with optional `0x`).
+ */
+export function hashToBytes(hash: Hash): number[] {
+  if (Array.isArray(hash)) {
+    if (hash.length !== 32) {
+      throw new Error(`Expected a 32-byte hash array, got ${hash.length} bytes`);
+    }
+    return hash;
+  }
   const clean = hash.startsWith("0x") ? hash.slice(2) : hash;
   if (clean.length !== 64) {
     throw new Error(`Expected 32-byte hex hash, got ${clean.length / 2} bytes: ${hash}`);
