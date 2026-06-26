@@ -10,7 +10,7 @@ crons = ["*/1 * * * *"]
 # Idempotency store for settled markets.
 [[kv_namespaces]]
 binding = "SETTLED"
-id = "PLACEHOLDER_KV_ID"
+id = "d1e2c01c9923440f9e37adc435c23ac3"
 
 [vars]
 CLUSTER = "devnet"

@@ -6,12 +6,12 @@ compatibility_flags = ["nodejs_compat"]
 # Odds / receipt cache.
 [[kv_namespaces]]
 binding = "CACHE"
-id = "PLACEHOLDER_KV_ID"
+id = "26bda61d759f439a918b203b91b31675"
 
 # Shared with the keeper: settled-market signatures for receipts.
 [[kv_namespaces]]
 binding = "SETTLED"
-id = "PLACEHOLDER_KV_ID"
+id = "d1e2c01c9923440f9e37adc435c23ac3"
 
 [vars]
 CLUSTER = "devnet"
