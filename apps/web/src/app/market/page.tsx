@@ -159,7 +159,7 @@ function MarketInner() {
 
 export default function MarketPage() {
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-3xl px-5 py-10">
       <Link
         href="/"
         className="mb-6 inline-block text-sm text-[var(--color-muted)] hover:text-[var(--color-chalk)]"

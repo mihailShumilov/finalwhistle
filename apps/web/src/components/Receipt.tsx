@@ -40,16 +40,15 @@ export function Receipt({ data }: { data: ReceiptView }) {
 
   return (
     <div className="card overflow-hidden">
+      <div className="h-1 w-full flow-bar" />
       <div className="border-b border-[var(--color-line)] bg-[#0b140d] px-6 py-5">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-widest text-[var(--color-muted)]">
-              Verifiable Settlement Receipt
-            </p>
-            <h2 className="mt-1 text-xl font-bold">{market.title || market.predicate}</h2>
+            <p className="eyebrow">Verifiable Settlement Receipt</p>
+            <h2 className="display mt-1 text-xl font-bold">{market.title || market.predicate}</h2>
           </div>
           {verified ? (
-            <span className="badge bg-[#0f2417] text-[var(--color-grass-bright)] text-sm">
+            <span className="badge anim-pop bg-[#0f2417] text-[var(--color-grass-bright)] text-sm">
               ✓ Independently re-verified
             </span>
           ) : proof ? (
