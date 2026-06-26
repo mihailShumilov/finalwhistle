@@ -1,6 +1,10 @@
 import type * as anchor from "@coral-xyz/anchor";
-import { enumKey, FINALWHISTLE_PROGRAM, type MarketAccount } from "@finalwhistle/sdk";
-import { address } from "@solana/kit";
+import {
+  enumKey,
+  FINALWHISTLE_PROGRAM,
+  type MarketAccount,
+  scanMarkets as sdkScanMarkets,
+} from "@finalwhistle/sdk";
 import type { ResilientRpcPool } from "solana-resilience-kit";
 
 export interface ScannedMarket {
@@ -9,32 +13,15 @@ export interface ScannedMarket {
 }
 
 /**
- * List every FinalWhistle market via the resilient RPC pool and decode it. Positions (a
- * different discriminator) fail to decode and are skipped. For the hackathon a full
- * `getProgramAccounts` scan on devnet is fine; a production index would use the read API's D1.
+ * List every FinalWhistle market via the resilient RPC pool. Delegates to the SDK's
+ * `scanMarkets`, which decodes and camelCases the account fields (the BorshAccountsCoder
+ * otherwise returns raw snake_case keys). Positions are skipped.
  */
 export async function scanMarkets(
   pool: ResilientRpcPool,
   coder: anchor.BorshAccountsCoder,
 ): Promise<ScannedMarket[]> {
-  const rpc = pool.rpc();
-  const accounts = await rpc
-    .getProgramAccounts(address(FINALWHISTLE_PROGRAM.toBase58()), { encoding: "base64" })
-    .send();
-
-  const out: ScannedMarket[] = [];
-  for (const { pubkey, account } of accounts) {
-    const data = Buffer.from(account.data[0], "base64");
-    for (const name of ["market", "Market"]) {
-      try {
-        out.push({ address: pubkey.toString(), market: coder.decode(name, data) as MarketAccount });
-        break;
-      } catch {
-        /* not a market */
-      }
-    }
-  }
-  return out;
+  return sdkScanMarkets(pool.rpc(), coder, FINALWHISTLE_PROGRAM.toBase58());
 }
 
 /** Markets that are open and whose betting window has closed → ready to settle. */

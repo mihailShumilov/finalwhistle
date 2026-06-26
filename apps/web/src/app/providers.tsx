@@ -2,7 +2,7 @@
 
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
-import { SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
+import { PhantomWalletAdapter, SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
 import { Buffer } from "buffer";
 import { useMemo } from "react";
 import { RPC } from "../lib/config";
@@ -14,8 +14,9 @@ if (typeof window !== "undefined") {
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  // Phantom / Backpack register via the Wallet Standard automatically; Solflare added explicitly.
-  const wallets = useMemo(() => [new SolflareWalletAdapter()], []);
+  // Phantom + Solflare registered explicitly; other Wallet-Standard wallets (Backpack, …)
+  // are auto-detected and de-duplicated by the WalletProvider.
+  const wallets = useMemo(() => [new PhantomWalletAdapter(), new SolflareWalletAdapter()], []);
   return (
     <ConnectionProvider endpoint={RPC}>
       <WalletProvider wallets={wallets} autoConnect>

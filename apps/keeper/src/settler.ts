@@ -62,6 +62,12 @@ export async function settleMarket(
     return { market: marketAddress, status: "skipped", reason: "betting open" };
   }
 
+  // Two-stat settle proofs exceed the legacy 1232-byte tx limit; settling them needs an
+  // Address Lookup Table (tracked follow-up). Skip cleanly instead of churning every cron.
+  if (market.statKey2 !== null) {
+    return { market: marketAddress, status: "skipped", reason: "two-stat settle needs ALT" };
+  }
+
   // Fetch the three-stage proof for this market's exact stat.
   const validation = await fetchStatValidation(deps.session, {
     fixtureId: market.fixtureId.toNumber(),

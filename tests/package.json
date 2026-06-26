@@ -9,7 +9,9 @@
     "spike": "tsx src/spike/validate_stat_spike.ts",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lifecycle": "tsx src/lifecycle/devnet_lifecycle.ts"
+    "lifecycle": "tsx src/lifecycle/devnet_lifecycle.ts",
+    "seed": "tsx src/lifecycle/seed.ts",
+    "void": "tsx src/lifecycle/void.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.32.1",
@@ -18,7 +20,8 @@
     "@solana/web3.js": "1.98.4",
     "bs58": "6.0.0",
     "tweetnacl": "1.0.3",
-    "bn.js": "5.2.3"
+    "bn.js": "5.2.3",
+    "@finalwhistle/sdk": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "26.0.1",
