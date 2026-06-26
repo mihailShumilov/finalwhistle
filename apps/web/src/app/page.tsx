@@ -51,7 +51,7 @@ export default function MarketsPage() {
         {markets?.map((m) => (
           <Link
             key={m.address}
-            href={`/market/${m.address}`}
+            href={`/market?address=${m.address}`}
             className="card block p-5 hover:border-[var(--color-grass)]"
           >
             <div className="mb-3 flex items-start justify-between gap-2">

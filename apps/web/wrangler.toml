@@ -1,0 +1,8 @@
+name = "finalwhistle-web"
+compatibility_date = "2026-06-01"
+
+# Static-asset-only Worker (no server runtime): serves the Next.js static export in ./out.
+[assets]
+directory = "./out"
+html_handling = "auto-trailing-slash"
+not_found_handling = "404-page"

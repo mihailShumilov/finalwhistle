@@ -14,12 +14,10 @@ id = "d1e2c01c9923440f9e37adc435c23ac3"
 
 [vars]
 CLUSTER = "devnet"
-RPC_PRIMARY = "https://api.devnet.solana.com"
-RPC_BACKUP = "https://api.devnet.solana.com"
 TXLINE_PROGRAM_ID = "6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J"
 TXLINE_API_BASE = "https://txline-dev.txodds.com"
 
-# Secrets (set with `wrangler secret put`): KEEPER_SECRET_KEY, TXLINE_JWT, TXLINE_API_TOKEN
+# Secrets (wrangler secret put): RPC_PRIMARY, RPC_BACKUP, KEEPER_SECRET_KEY, TXLINE_JWT, TXLINE_API_TOKEN
 
 [dev]
 port = 7792

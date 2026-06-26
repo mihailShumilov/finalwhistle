@@ -16,17 +16,14 @@ Status as of this commit. ✅ done · 🟡 ready, needs a credential · ⬜ outs
 | ✅ | **Deployed program on devnet, testable** | done | `GSud9smJwwV6QhDLd2hmSQPShj1w8zYumz5BL3snbmao` (`DEVNET.md`); full create→place→settle→claim proven via `pnpm --filter @finalwhistle/tests lifecycle`. |
 | ✅ | **Technical doc + API-feedback + diagrams + demo script** | done | `docs/TECHNICAL.md`, `docs/TXLINE_FEEDBACK.md`, `docs/diagrams.md`, `docs/DEMO_SCRIPT.md`. |
 | ✅ | **Security pass** — no secrets in repo, checked math, account validation, no on-chain `unwrap`/`expect` | done | Keypairs git-ignored (`.keys/`); `checked_*` math; full PDA/owner/signer checks; `clippy -D warnings` + `cargo fmt` clean; 58 Rust tests. |
-| 🟡 | **Working public link** (frontend/API/keeper on Cloudflare Workers) | ready, needs CF login | `apps/web` builds (`next build` green); `apps/api`/`apps/keeper` are Workers; deploy with `wrangler deploy` once a **Cloudflare account / `wrangler login`** is available. Local stack runs via `docker compose up` or `pnpm --filter … dev`. |
-| ⬜ | **Demo video ≤5 min** | outstanding | Script ready in `docs/DEMO_SCRIPT.md`; record against the deployed link or the local stack. |
+| ✅ | **Working public link** (frontend/API/keeper on Cloudflare Workers) | done | Frontend https://finalwhistle-web.mschumilow.workers.dev · API https://finalwhistle-api.mschumilow.workers.dev (live `/markets` + `/receipt`) · keeper https://finalwhistle-keeper.mschumilow.workers.dev. Worker reads use a Helius devnet RPC (secret). |
+| ⬜ | **Demo video ≤5 min** | outstanding | Script ready in `docs/DEMO_SCRIPT.md`; record against the live link. |
 | ⬜ | **Submit via Superteam Earn before 19 Jul 2026** | outstanding | Submission action by the team. |
 
-## Blockers requiring a credential (autonomy contract)
+## Remaining (team actions, not blockers)
 
-1. **Cloudflare account / `wrangler login`** — to publish the frontend, read API, and keeper Cron
-   to public Workers URLs (and create the D1/KV namespaces referenced in `wrangler.toml`). Code is
-   deploy-ready; only the account + `wrangler secret put` values (KEEPER_SECRET_KEY, TXLINE_JWT,
-   TXLINE_API_TOKEN) are missing.
-2. **Demo recording + Superteam submission** — team actions.
+1. **Demo recording** — record the ≤5-min walkthrough against the live link (`docs/DEMO_SCRIPT.md`).
+2. **Superteam Earn submission** — submit before the deadline.
 
-Everything else — program, SDK, keeper, API, frontend, tests, docs, devnet deployment — is
-complete and verified.
+Everything buildable — program, SDK, keeper, API, frontend, tests, docs, **devnet program +
+Cloudflare deployment** — is complete and verified live.

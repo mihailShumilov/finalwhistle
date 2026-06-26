@@ -13,6 +13,9 @@ routes USDC to winners atomically; a tampered proof reverts. Every payout ships 
 
 ### Live on devnet ✅
 
+- **🌐 Demo:** **https://finalwhistle-web.mschumilow.workers.dev** · API
+  https://finalwhistle-api.mschumilow.workers.dev · keeper
+  https://finalwhistle-keeper.mschumilow.workers.dev (all on Cloudflare Workers).
 - **FinalWhistle program:** [`GSud9smJwwV6QhDLd2hmSQPShj1w8zYumz5BL3snbmao`](https://explorer.solana.com/address/GSud9smJwwV6QhDLd2hmSQPShj1w8zYumz5BL3snbmao?cluster=devnet)
   (settles via CPI into TxLINE devnet `6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J`).
 - **Proven end-to-end on devnet:** the Phase-1 spike landed real single- and two-stat

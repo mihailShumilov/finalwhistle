@@ -88,28 +88,6 @@ app.get("/health", (c) => {
   return c.json({ ok: true, cluster: ctx.cluster, program: FINALWHISTLE_PROGRAM.toBase58() });
 });
 
-// Diagnostic: is the configured RPC reachable from this Worker? (raw fetch vs pooled call)
-app.get("/debug/rpc", async (c) => {
-  const url = c.env.RPC_PRIMARY ?? "https://api.devnet.solana.com";
-  const body = JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getHealth" });
-  const out: Record<string, unknown> = { url };
-  try {
-    const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body });
-    out.rawStatus = r.status;
-    out.rawBody = (await r.text()).slice(0, 200);
-  } catch (e) {
-    out.rawError = String(e);
-  }
-  try {
-    const ctx = buildContext(c.env);
-    const slot = await ctx.pool.rpc().getSlot().send();
-    out.pooledSlot = String(slot);
-  } catch (e) {
-    out.pooledError = String(e);
-  }
-  return c.json(out);
-});
-
 app.get("/markets", async (c) => {
   const ctx = buildContext(c.env);
   const markets = await scanMarkets(ctx.pool.rpc(), ctx.coder, FINALWHISTLE_PROGRAM.toBase58());
