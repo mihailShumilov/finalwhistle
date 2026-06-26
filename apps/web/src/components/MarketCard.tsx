@@ -2,30 +2,25 @@
 
 import { formatUsdc } from "@finalwhistle/sdk";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import type { MarketView } from "../lib/api";
-import { StatusBadge } from "./ui";
 
-/** Odds bar that animates its split on mount for a "live" feel. */
-function LiveOdds({ impliedYes }: { impliedYes: number }) {
-  const target = Math.round(impliedYes * 100);
-  const [w, setW] = useState(50);
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setW(target));
-    return () => cancelAnimationFrame(id);
-  }, [target]);
+function SegBar({ yes }: { yes: number }) {
+  const N = 20;
+  const on = Math.round((yes / 100) * N);
   return (
     <div>
-      <div className="mb-1.5 flex justify-between text-xs font-semibold">
-        <span className="text-[var(--color-yes)]">YES {target}%</span>
-        <span className="text-[var(--color-no)]">{100 - target}% NO</span>
+      <div className="term mb-1.5 flex justify-between text-[0.7rem] font-bold">
+        <span className="volt">YES {yes}</span>
+        <span className="var">{100 - yes} NO</span>
       </div>
-      <div className="flex h-2.5 overflow-hidden rounded-full bg-[var(--color-line)]">
-        <div
-          className="grow-x h-full"
-          style={{ width: `${w}%`, background: "linear-gradient(90deg,#16a34a,#2bdc6e)" }}
-        />
-        <div className="h-full flex-1" style={{ background: "linear-gradient(90deg,#fb5577,#b91c47)" }} />
+      <div className="flex h-2.5 gap-0.5">
+        {Array.from({ length: N }).map((_, i) => (
+          <div
+            key={`seg-${String(i)}`}
+            className="flex-1"
+            style={{ background: i < on ? "var(--color-volt)" : "var(--color-var)" }}
+          />
+        ))}
       </div>
     </div>
   );
@@ -33,52 +28,61 @@ function LiveOdds({ impliedYes }: { impliedYes: number }) {
 
 export function MarketCard({ m }: { m: MarketView }) {
   const pool = formatUsdc(BigInt(m.yesPool) + BigInt(m.noPool));
+  const yes = Math.round(m.impliedYes * 100);
   const open = m.status === "open";
   const resolved = m.status === "resolved";
+  const voided = m.status === "voided";
   const href = resolved ? `/receipt?address=${m.address}` : `/market?address=${m.address}`;
   const twoStat = m.statKey2 !== null;
+  const winner = m.winningSide === 1 ? "YES" : m.winningSide === 2 ? "NO" : "";
+
+  const ledClass = voided ? "led-var" : "led";
+  const ledText = open
+    ? "● LIVE"
+    : resolved
+      ? "✓ FULL TIME"
+      : "✕ VOID";
 
   return (
-    <Link href={href} className="card card-hover group block p-5">
-      <div className="mb-3 flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2">
-          {open && <span className="live-dot mt-1.5" />}
-          <h3 className="display font-semibold leading-tight">{m.title || m.predicate}</h3>
+    <Link href={href} className={`panel hover-lift block ${voided ? "panel-var" : ""}`}>
+      <div className={`${ledClass} flex items-center justify-between px-3 py-1`}>
+        <span className="term text-[0.62rem] font-bold tracking-widest">
+          {ledText}
+          {resolved && winner ? ` · ${winner} WINS` : ""}
+        </span>
+        <span className="term text-[0.62rem] font-bold tracking-widest opacity-80">
+          #{m.fixtureId}
+        </span>
+      </div>
+
+      <div className="p-4">
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="score text-xl leading-none tracking-wide text-[var(--color-chalk)]">
+            {m.title || m.predicate}
+          </h3>
+          {twoStat && <span className="tag-sky term shrink-0 text-[0.58rem]">2-STAT</span>}
         </div>
-        <StatusBadge status={m.status} winningSide={m.winningSide} />
-      </div>
+        <p className="term mt-1.5 truncate text-[0.7rem] text-[var(--color-chalk-faint)]">
+          {m.predicate}
+        </p>
 
-      <p className="mono mb-4 line-clamp-1 text-xs text-[var(--color-muted)]">{m.predicate}</p>
+        <div className="my-4">
+          <SegBar yes={yes} />
+        </div>
 
-      <LiveOdds impliedYes={m.impliedYes} />
-
-      <div className="mt-4 flex items-center justify-between text-xs text-[var(--color-muted)]">
-        <span>
-          Pool <span className="mono text-[var(--color-chalk)]">{pool}</span> USDC
-        </span>
-        <span className="flex items-center gap-1.5">
-          {twoStat && <span className="pill px-2 py-0.5 text-[0.65rem]">2-stat</span>}
-          <span className="mono">#{m.fixtureId}</span>
-        </span>
-      </div>
-
-      <div
-        className="mt-4 flex items-center gap-1 text-xs font-semibold transition-colors"
-        style={{ color: resolved ? "var(--color-proof)" : "var(--color-grass-bright)" }}
-      >
-        {open && (
-          <>
-            Place a bet
-            <span className="transition-transform group-hover:translate-x-1">→</span>
-          </>
-        )}
-        {resolved && (
-          <>
-            Verify the settlement receipt
-            <span className="transition-transform group-hover:translate-x-1">→</span>
-          </>
-        )}
-        {m.status === "voided" && <span className="text-[var(--color-muted)]">Refund available →</span>}
+        <div className="flex items-center justify-between border-t border-[var(--color-line)] pt-3">
+          <span className="term text-[0.7rem] text-[var(--color-chalk-dim)]">
+            POOL <span className="text-[var(--color-chalk)]">{pool}</span> USDC
+          </span>
+          <span
+            className="term text-[0.7rem] font-bold tracking-wider"
+            style={{ color: resolved ? "var(--color-sky)" : voided ? "var(--color-var)" : "var(--color-volt)" }}
+          >
+            {open && "PLACE BET →"}
+            {resolved && "VERIFY RECEIPT →"}
+            {voided && "REFUND →"}
+          </span>
+        </div>
       </div>
     </Link>
   );

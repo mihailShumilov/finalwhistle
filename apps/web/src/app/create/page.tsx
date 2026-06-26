@@ -69,94 +69,56 @@ export default function CreatePage() {
       });
       const res = await send([ix]);
       const market = marketPda(creator, nonce).toBase58();
-      setResult(`${res.outcome}: market ${market}`);
+      setResult(`${res.outcome.toUpperCase()}: MARKET ${market}`);
     } catch (e) {
-      setResult(`Failed: ${e instanceof Error ? e.message : String(e)}`);
+      setResult(`FAILED: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-5 py-10">
+    <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
       <Link
-        href="/"
-        className="mb-6 inline-block text-sm text-[var(--color-muted)] hover:text-[var(--color-chalk)]"
+        href="/#fixtures"
+        className="term mb-6 inline-block text-xs text-[var(--color-chalk-dim)] transition-colors hover:text-[var(--color-volt)]"
       >
-        ← Markets
+        ← BACK TO THE BOARD
       </Link>
-      <h1 className="mb-1 text-2xl font-bold">Create a market</h1>
-      <p className="mb-6 text-sm text-[var(--color-muted)]">
+      <h1 className="score text-4xl tracking-wide sm:text-5xl">New market</h1>
+      <p className="term mt-2 text-xs leading-relaxed text-[var(--color-chalk-dim)]">
         A market is a predicate over a TxLINE score stat. It self-settles when the proof is verified
         on-chain. USDC-only collateral.
       </p>
 
-      <div className="card space-y-4 p-6">
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Fixture id">
-            <input
-              className={inputCls}
-              value={fixtureId}
-              onChange={(e) => setFixtureId(e.target.value)}
-            />
-          </Field>
-          <Field label="Period">
-            <input
-              className={inputCls}
-              value={period}
-              onChange={(e) => setPeriod(e.target.value)}
-            />
-          </Field>
+      <div className="panel mt-6">
+        <div className="led-dim term px-3 py-1.5 text-[0.62rem] font-bold tracking-widest">
+          PREDICATE BUILDER
         </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Stat">
-            <select
-              className={inputCls}
-              value={statKey}
-              onChange={(e) => setStatKey(Number(e.target.value))}
-            >
-              {STAT_OPTIONS.map((o) => (
-                <option key={o.key} value={o.key}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Comparison">
-            <select
-              className={inputCls}
-              value={comparison}
-              onChange={(e) => setComparison(e.target.value as "greaterThan" | "lessThan")}
-            >
-              <option value="greaterThan">greater than</option>
-              <option value="lessThan">less than</option>
-            </select>
-          </Field>
-        </div>
-
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={twoStat} onChange={(e) => setTwoStat(e.target.checked)} />
-          Two-stat market (e.g. goal difference)
-        </label>
-
-        {twoStat && (
+        <div className="space-y-4 p-5 sm:p-6">
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Operator">
-              <select
+            <Field label="Fixture id">
+              <input
                 className={inputCls}
-                value={op}
-                onChange={(e) => setOp(e.target.value as "subtract" | "add")}
-              >
-                <option value="subtract">subtract (A − B)</option>
-                <option value="add">add (A + B)</option>
-              </select>
+                value={fixtureId}
+                onChange={(e) => setFixtureId(e.target.value)}
+              />
             </Field>
-            <Field label="Second stat">
+            <Field label="Period">
+              <input
+                className={inputCls}
+                value={period}
+                onChange={(e) => setPeriod(e.target.value)}
+              />
+            </Field>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Stat">
               <select
                 className={inputCls}
-                value={statKey2}
-                onChange={(e) => setStatKey2(Number(e.target.value))}
+                value={statKey}
+                onChange={(e) => setStatKey(Number(e.target.value))}
               >
                 {STAT_OPTIONS.map((o) => (
                   <option key={o.key} value={o.key}>
@@ -165,55 +127,104 @@ export default function CreatePage() {
                 ))}
               </select>
             </Field>
+            <Field label="Comparison">
+              <select
+                className={inputCls}
+                value={comparison}
+                onChange={(e) => setComparison(e.target.value as "greaterThan" | "lessThan")}
+              >
+                <option value="greaterThan">greater than</option>
+                <option value="lessThan">less than</option>
+              </select>
+            </Field>
           </div>
-        )}
 
-        <div className="grid grid-cols-3 gap-4">
-          <Field label="Threshold">
+          <label className="term flex items-center gap-2 text-xs text-[var(--color-chalk-dim)]">
+            <input
+              type="checkbox"
+              checked={twoStat}
+              onChange={(e) => setTwoStat(e.target.checked)}
+            />
+            TWO-STAT MARKET (e.g. goal difference)
+          </label>
+
+          {twoStat && (
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Operator">
+                <select
+                  className={inputCls}
+                  value={op}
+                  onChange={(e) => setOp(e.target.value as "subtract" | "add")}
+                >
+                  <option value="subtract">subtract (A − B)</option>
+                  <option value="add">add (A + B)</option>
+                </select>
+              </Field>
+              <Field label="Second stat">
+                <select
+                  className={inputCls}
+                  value={statKey2}
+                  onChange={(e) => setStatKey2(Number(e.target.value))}
+                >
+                  {STAT_OPTIONS.map((o) => (
+                    <option key={o.key} value={o.key}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+          )}
+
+          <div className="grid grid-cols-3 gap-4">
+            <Field label="Threshold">
+              <input
+                className={inputCls}
+                value={threshold}
+                onChange={(e) => setThreshold(e.target.value)}
+              />
+            </Field>
+            <Field label="Close in (min)">
+              <input
+                className={inputCls}
+                value={closeIn}
+                onChange={(e) => setCloseIn(e.target.value)}
+              />
+            </Field>
+            <Field label="Fee (bps)">
+              <input
+                className={inputCls}
+                value={feeBps}
+                onChange={(e) => setFeeBps(e.target.value)}
+              />
+            </Field>
+          </div>
+
+          <Field label="USDC mint">
             <input
               className={inputCls}
-              value={threshold}
-              onChange={(e) => setThreshold(e.target.value)}
+              value={usdcMint}
+              onChange={(e) => setUsdcMint(e.target.value)}
             />
           </Field>
-          <Field label="Close in (min)">
-            <input
-              className={inputCls}
-              value={closeIn}
-              onChange={(e) => setCloseIn(e.target.value)}
-            />
-          </Field>
-          <Field label="Fee (bps)">
-            <input
-              className={inputCls}
-              value={feeBps}
-              onChange={(e) => setFeeBps(e.target.value)}
-            />
-          </Field>
+
+          <div className="border border-[var(--color-line-2)] bg-[var(--color-pitch)] p-3">
+            <p className="label">Predicate preview</p>
+            <p className="term mt-1 volt">YES ⇔ {title}</p>
+          </div>
+
+          <button
+            type="button"
+            className="btn btn-primary w-full justify-center"
+            disabled={!connected || busy}
+            onClick={create}
+          >
+            {busy ? "Submitting…" : connected ? "Create market" : "Connect a wallet"}
+          </button>
+          {result && (
+            <p className="term break-all text-xs text-[var(--color-chalk-dim)]">{result}</p>
+          )}
         </div>
-
-        <Field label="USDC mint">
-          <input
-            className={inputCls}
-            value={usdcMint}
-            onChange={(e) => setUsdcMint(e.target.value)}
-          />
-        </Field>
-
-        <div className="rounded-lg border border-[var(--color-line)] bg-[var(--color-pitch)] p-3">
-          <p className="text-xs uppercase text-[var(--color-muted)]">Predicate preview</p>
-          <p className="mono mt-1 text-[var(--color-grass-bright)]">YES ⇔ {title}</p>
-        </div>
-
-        <button
-          type="button"
-          className="btn btn-primary w-full"
-          disabled={!connected || busy}
-          onClick={create}
-        >
-          {busy ? "Submitting…" : connected ? "Create market" : "Connect a wallet"}
-        </button>
-        {result && <p className="mono break-all text-xs text-[var(--color-muted)]">{result}</p>}
       </div>
     </div>
   );

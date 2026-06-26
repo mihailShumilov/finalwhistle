@@ -18,22 +18,25 @@ function ReceiptInner() {
       .catch((e) => setError(String(e)));
   }, [address]);
 
-  if (!address) return <p className="text-[var(--color-muted)]">No market address.</p>;
-  if (error) return <div className="card p-4 text-sm text-[var(--color-no)]">{error}</div>;
-  if (!data) return <p className="text-[var(--color-muted)]">Loading receipt…</p>;
+  if (!address) return <p className="term text-xs text-[var(--color-chalk-dim)]">No market address.</p>;
+  if (error) return <div className="panel panel-var p-4 term text-xs var">{error}</div>;
+  if (!data)
+    return <p className="term text-xs text-[var(--color-chalk-dim)]">LOADING RECEIPT…</p>;
   return <Receipt data={data} />;
 }
 
 export default function ReceiptPage() {
   return (
-    <div className="mx-auto max-w-3xl px-5 py-10">
+    <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
       <Link
-        href="/"
-        className="mb-6 inline-block text-sm text-[var(--color-muted)] hover:text-[var(--color-chalk)]"
+        href="/#fixtures"
+        className="term mb-6 inline-block text-xs text-[var(--color-chalk-dim)] transition-colors hover:text-[var(--color-volt)]"
       >
-        ← Markets
+        ← BACK TO THE BOARD
       </Link>
-      <Suspense fallback={<p className="text-[var(--color-muted)]">Loading receipt…</p>}>
+      <Suspense
+        fallback={<p className="term text-xs text-[var(--color-chalk-dim)]">LOADING RECEIPT…</p>}
+      >
         <ReceiptInner />
       </Suspense>
     </div>

@@ -3,36 +3,35 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useInView } from "./motion";
 
-const DURATION = 5600; // ms for the slow (old-way) lane to finish
+const DURATION = 6000; // ms for the slow VAR lane to crawl the full timeline
+const GLT_END = 0.2; // goal-line tech finishes in the first fifth
 
 interface Step {
-  at: number; // fraction of timeline when this step lights up
+  at: number;
   label: string;
   sub?: string;
 }
 
-// Old way (UMA-style optimistic oracle) — crawls across the whole timeline.
-const OLD: Step[] = [
-  { at: 0.0, label: "Match ends" },
-  { at: 0.12, label: "Someone proposes the outcome", sub: "posts a bond" },
-  { at: 0.3, label: "Anyone can dispute it", sub: "escalates to a vote" },
-  { at: 0.45, label: "Token-holders vote", sub: "48–72h · whale-weighted" },
-  { at: 0.97, label: "Settles — if the whales agreed", sub: "$237M once rode on one vote" },
+const VAR_STEPS: Step[] = [
+  { at: 0.0, label: "On-field decision stands" },
+  { at: 0.14, label: "Check initiated", sub: "a bond is posted to dispute" },
+  { at: 0.32, label: "Escalated to a token vote" },
+  { at: 0.5, label: "Whales enter the room", sub: "biggest wallet, biggest say" },
+  { at: 0.97, label: "Decision… overturnable", sub: "$237M once hung on one vote" },
 ];
 
-// FinalWhistle — finishes in the first fifth of the timeline.
-const NEW: Step[] = [
-  { at: 0.0, label: "Final whistle", sub: "TxLINE score feed" },
-  { at: 0.05, label: "Fetch the Merkle proof", sub: "three-stage stat proof" },
-  { at: 0.11, label: "validate_stat runs on Solana", sub: "CPI recomputes the root" },
-  { at: 0.19, label: "Settled · paid · receipt", sub: "one transaction" },
+const GLT_STEPS: Step[] = [
+  { at: 0.0, label: "Ball crosses the line", sub: "match goes final on TxLINE" },
+  { at: 0.05, label: "Sensors fire", sub: "three-stage Merkle proof" },
+  { at: 0.11, label: "Proof checked on Solana", sub: "validate_stat CPI" },
+  { at: 0.19, label: "DECISION", sub: "settled · paid · receipt" },
 ];
 
-const NEW_END = 0.2;
+const pad = (n: number) => String(Math.floor(n)).padStart(2, "0");
 
 export function OracleRace() {
   const { ref, inView } = useInView<HTMLDivElement>();
-  const [p, setP] = useState(0); // 0..1 timeline progress
+  const [p, setP] = useState(0);
   const raf = useRef(0);
   const started = useRef(false);
 
@@ -57,159 +56,156 @@ export function OracleRace() {
     return () => cancelAnimationFrame(raf.current);
   }, [inView, run]);
 
-  const newDone = p >= NEW_END;
-  const oldDone = p >= 0.99;
-  // seconds counter for FinalWhistle freezes once done; "days" climbs for the old way
-  const fwSeconds = Math.min(0.4, (p / NEW_END) * 0.4).toFixed(1);
-  const oldDays = Math.min(3, p * 3).toFixed(1);
+  // VAR review clock climbs to 72:00:00 (hours); GLT timer freezes at 0.400s
+  const hrs = p * 72;
+  const varClock = `${pad(hrs)}:${pad((hrs % 1) * 60)}:${pad((((hrs % 1) * 60) % 1) * 60)}`;
+  const gltSec = Math.min(0.4, (p / GLT_END) * 0.4);
 
   return (
-    <div ref={ref} className="glass overflow-hidden p-5 sm:p-7">
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="eyebrow">Watch the same match settle, two ways</p>
-          <h3 className="display mt-1 text-xl font-bold sm:text-2xl">
-            Days of voting vs <span className="gradient-text">one proof</span>
-          </h3>
-        </div>
-        <button type="button" className="btn btn-ghost self-start text-sm" onClick={run}>
-          ↻ Replay
-        </button>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <Lane
-          tone="warn"
-          tag="The old way · optimistic oracle"
-          steps={OLD}
-          p={p}
-          done={oldDone}
-          counter={`${oldDays} days`}
-          counterLabel="elapsed, still disputable"
-          footer="Settled by a token vote a whale can out-buy."
-          mascot="🐋"
-        />
-        <Lane
-          tone="good"
-          tag="FinalWhistle · cryptographic settlement"
-          steps={NEW}
-          p={p}
-          done={newDone}
-          counter={`${fwSeconds}s`}
-          counterLabel="to final, re-verifiable settlement"
-          footer="Settled by math. Anyone can re-check the proof."
-          mascot="✅"
-          fastEnd={NEW_END}
-        />
-      </div>
+    <div ref={ref} className="grid gap-4 lg:grid-cols-2">
+      <Lane
+        kind="var"
+        title="VAR Review"
+        sub="optimistic oracle · the old way"
+        rec
+        steps={VAR_STEPS}
+        p={p}
+        span={1}
+        clock={varClock}
+        clockUnit="hh:mm:ss under review"
+        verdict="OVERTURNABLE"
+        verdictDone={p >= 0.97}
+        footer="Settled by a token vote a whale can out-buy."
+      />
+      <Lane
+        kind="glt"
+        title="Goal-line Technology"
+        sub="FinalWhistle · cryptographic settlement"
+        steps={GLT_STEPS}
+        p={p}
+        span={GLT_END}
+        clock={`${gltSec.toFixed(3)}s`}
+        clockUnit="to a final, re-verifiable decision"
+        verdict="GOAL ✓"
+        verdictDone={p >= GLT_END}
+        footer="Settled by math. Anyone can re-check the proof."
+      />
     </div>
   );
 }
 
 function Lane({
-  tone,
-  tag,
+  kind,
+  title,
+  sub,
+  rec,
   steps,
   p,
-  done,
-  counter,
-  counterLabel,
+  span,
+  clock,
+  clockUnit,
+  verdict,
+  verdictDone,
   footer,
-  mascot,
-  fastEnd,
 }: {
-  tone: "warn" | "good";
-  tag: string;
+  kind: "var" | "glt";
+  title: string;
+  sub: string;
+  rec?: boolean;
   steps: Step[];
   p: number;
-  done: boolean;
-  counter: string;
-  counterLabel: string;
+  span: number;
+  clock: string;
+  clockUnit: string;
+  verdict: string;
+  verdictDone: boolean;
   footer: string;
-  mascot: string;
-  fastEnd?: number;
 }) {
-  const good = tone === "good";
-  const accent = good ? "var(--color-grass-bright)" : "var(--color-whale)";
-  // progress bar fills across this lane's own timeline span
-  const span = fastEnd ?? 1;
+  const isVar = kind === "var";
+  const accent = isVar ? "var(--color-var)" : "var(--color-volt)";
   const fill = Math.min(100, (p / span) * 100);
 
   return (
-    <div
-      className="relative rounded-xl border p-4 transition-colors"
-      style={{
-        borderColor: done ? accent : "var(--color-line)",
-        background: good
-          ? "linear-gradient(180deg, rgba(43,220,110,0.06), transparent)"
-          : "linear-gradient(180deg, rgba(245,158,11,0.06), transparent)",
-      }}
-    >
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <span
-          className="text-[0.7rem] font-bold uppercase tracking-wider"
-          style={{ color: accent }}
-        >
-          {tag}
-        </span>
-        <span className={done ? "anim-pop text-lg" : "text-lg opacity-30"}>{mascot}</span>
-      </div>
-
-      {/* progress bar */}
-      <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-[var(--color-line)]">
-        <div
-          className="h-full rounded-full"
-          style={{
-            width: `${fill}%`,
-            background: good
-              ? "linear-gradient(90deg, var(--color-grass), var(--color-grass-glow))"
-              : "linear-gradient(90deg, var(--color-whale), var(--color-no))",
-            transition: "width 0.08s linear",
-          }}
-        />
-      </div>
-
-      <ol className="space-y-2.5">
-        {steps.map((s) => {
-          const active = p >= s.at;
-          return (
-            <li
-              key={s.label}
-              className="flex items-start gap-2.5 transition-all duration-300"
-              style={{ opacity: active ? 1 : 0.32, transform: active ? "none" : "translateX(-4px)" }}
-            >
-              <span
-                className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full text-[9px]"
-                style={{
-                  background: active ? accent : "var(--color-line)",
-                  color: "#04130a",
-                }}
-              >
-                {active ? "✓" : ""}
-              </span>
-              <span className="leading-tight">
-                <span className="text-sm font-medium text-[var(--color-chalk)]">{s.label}</span>
-                {s.sub && (
-                  <span className="mt-0.5 block text-xs text-[var(--color-muted)]">{s.sub}</span>
-                )}
-              </span>
-            </li>
-          );
-        })}
-      </ol>
-
+    <div className={`panel crt ${isVar ? "panel-var" : ""}`}>
       <div
-        className="mt-4 flex items-end justify-between border-t pt-3"
-        style={{ borderColor: "var(--color-line)" }}
+        className={`${isVar ? "led-var" : "led"} flex items-center justify-between px-3 py-1.5`}
       >
-        <div>
-          <div className="display text-2xl font-bold" style={{ color: accent }}>
-            {counter}
-          </div>
-          <div className="text-[0.7rem] text-[var(--color-muted)]">{counterLabel}</div>
-        </div>
+        <span className="term flex items-center gap-2 text-[0.66rem] font-bold tracking-widest">
+          {rec ? <span className="blink">● REC</span> : <span>● LIVE</span>}
+          {title.toUpperCase()}
+        </span>
+        <span className="term text-[0.6rem] font-bold tracking-widest opacity-80">
+          {isVar ? "CH 01" : "CH 02"}
+        </span>
       </div>
-      <p className="mt-3 text-xs leading-relaxed text-[var(--color-muted)]">{footer}</p>
+
+      <div className="p-4 sm:p-5">
+        <p className="label">{sub}</p>
+
+        {/* big timer */}
+        <div className="mt-3 flex items-end justify-between gap-3 border-b border-[var(--color-line)] pb-3">
+          <div>
+            <div
+              className="term text-3xl font-bold tabular-nums sm:text-4xl"
+              style={{ color: accent }}
+            >
+              {clock}
+            </div>
+            <div className="label mt-1">{clockUnit}</div>
+          </div>
+          {verdictDone && (
+            <span className={`stamp anim-stamp text-2xl ${isVar ? "stamp-var" : ""}`}>
+              {verdict}
+            </span>
+          )}
+        </div>
+
+        {/* progress segments */}
+        <div className="mt-4 flex h-2 gap-0.5">
+          {Array.from({ length: 24 }).map((_, i) => {
+            const on = (i / 24) * 100 < fill;
+            return (
+              <div
+                key={`seg-${kind}-${String(i)}`}
+                className="flex-1"
+                style={{ background: on ? accent : "var(--color-line)" }}
+              />
+            );
+          })}
+        </div>
+
+        <ol className="mt-4 space-y-2.5">
+          {steps.map((s) => {
+            const active = p >= s.at;
+            return (
+              <li
+                key={s.label}
+                className="flex items-start gap-2.5 transition-opacity duration-300"
+                style={{ opacity: active ? 1 : 0.3 }}
+              >
+                <span
+                  className="term mt-px text-xs font-bold"
+                  style={{ color: active ? accent : "var(--color-chalk-faint)" }}
+                >
+                  {active ? "▶" : "·"}
+                </span>
+                <span className="leading-tight">
+                  <span className="term text-sm text-[var(--color-chalk)]">{s.label}</span>
+                  {s.sub && (
+                    <span className="mt-0.5 block text-xs text-[var(--color-chalk-dim)]">
+                      {s.sub}
+                    </span>
+                  )}
+                </span>
+              </li>
+            );
+          })}
+        </ol>
+
+        <p className="mt-4 border-t border-[var(--color-line)] pt-3 text-xs text-[var(--color-chalk-dim)]">
+          {footer}
+        </p>
+      </div>
     </div>
   );
 }

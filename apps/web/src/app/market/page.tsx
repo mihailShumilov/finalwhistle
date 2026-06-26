@@ -37,10 +37,10 @@ function MarketDetail({ address }: { address: string }) {
         amount: parseUsdc(amount),
       });
       const res = await send([ix]);
-      setNote(`Stake ${side}: ${res.outcome} (${res.signature.slice(0, 12)}…)`);
+      setNote(`STAKE ${side}: ${res.outcome} (${res.signature.slice(0, 12)}…)`);
       reload();
     } catch (e) {
-      setNote(`Failed: ${e instanceof Error ? e.message : String(e)}`);
+      setNote(`FAILED: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
       setBusy(false);
     }
@@ -59,114 +59,137 @@ function MarketDetail({ address }: { address: string }) {
         usdcMint: new PublicKey(market.usdcMint),
       });
       const res = await send([ix]);
-      setNote(`Claim: ${res.outcome} (${res.signature.slice(0, 12)}…)`);
+      setNote(`CLAIM: ${res.outcome} (${res.signature.slice(0, 12)}…)`);
       reload();
     } catch (e) {
-      setNote(`Failed: ${e instanceof Error ? e.message : String(e)}`);
+      setNote(`FAILED: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
       setBusy(false);
     }
   }
 
-  if (error) return <div className="card p-4 text-sm text-[var(--color-no)]">{error}</div>;
-  if (!market) return <p className="text-[var(--color-muted)]">Loading…</p>;
+  if (error) return <div className="panel panel-var p-4 term text-xs var">{error}</div>;
+  if (!market) return <p className="term text-xs text-[var(--color-chalk-dim)]">LOADING…</p>;
 
   const open = market.status === "open";
   return (
-    <div className="card p-6">
-      <div className="mb-4 flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{market.title || market.predicate}</h1>
-          <p className="mono mt-1 text-sm text-[var(--color-muted)]">{market.predicate}</p>
-        </div>
-        <StatusBadge status={market.status} winningSide={market.winningSide} />
-      </div>
-      <OddsBar impliedYes={market.impliedYes} />
-      <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
-        <div>
-          <p className="text-xs text-[var(--color-muted)]">YES pool</p>
-          <Usdc baseUnits={market.yesPool} />
-        </div>
-        <div>
-          <p className="text-xs text-[var(--color-muted)]">NO pool</p>
-          <Usdc baseUnits={market.noPool} />
-        </div>
-        <div>
-          <p className="text-xs text-[var(--color-muted)]">Closes</p>
-          <span className="mono">{new Date(market.closeTs * 1000).toLocaleString()}</span>
-        </div>
+    <div className="panel crt">
+      <div className="led flex items-center justify-between px-3 py-1.5">
+        <span className="term text-[0.66rem] font-bold tracking-widest">⬢ MARKET TERMINAL</span>
+        <span className="term text-[0.62rem] font-bold tracking-widest opacity-80">
+          #{market.fixtureId}
+        </span>
       </div>
 
-      {open ? (
-        <div className="mt-6 border-t border-[var(--color-line)] pt-5">
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="flex-1">
-              <span className="mb-1 block text-xs uppercase text-[var(--color-muted)]">
-                Stake (USDC)
-              </span>
-              <input
-                className={inputCls}
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                inputMode="decimal"
-              />
+      <div className="p-5 sm:p-6">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="score text-3xl tracking-wide sm:text-4xl">
+              {market.title || market.predicate}
+            </h1>
+            <p className="term mt-1 text-xs text-[var(--color-chalk-faint)]">{market.predicate}</p>
+          </div>
+          <StatusBadge status={market.status} winningSide={market.winningSide} />
+        </div>
+
+        <div className="my-6">
+          <OddsBar impliedYes={market.impliedYes} />
+        </div>
+
+        <div className="grid grid-cols-3 gap-px border border-[var(--color-line)] bg-[var(--color-line)]">
+          <Box k="YES pool">
+            <Usdc baseUnits={market.yesPool} />
+          </Box>
+          <Box k="NO pool">
+            <Usdc baseUnits={market.noPool} />
+          </Box>
+          <Box k="Closes">
+            <span className="term text-xs">{new Date(market.closeTs * 1000).toLocaleString()}</span>
+          </Box>
+        </div>
+
+        {open ? (
+          <div className="mt-6 border-t border-[var(--color-line)] pt-5">
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="flex-1">
+                <span className="label mb-1.5 block">Stake (USDC)</span>
+                <input
+                  className={inputCls}
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  inputMode="decimal"
+                />
+              </div>
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={!connected || busy}
+                onClick={() => stake("YES")}
+              >
+                Stake YES
+              </button>
+              <button
+                type="button"
+                className="btn"
+                style={{ borderColor: "var(--color-var)", color: "var(--color-var)" }}
+                disabled={!connected || busy}
+                onClick={() => stake("NO")}
+              >
+                Stake NO
+              </button>
             </div>
-            <button
-              type="button"
-              className="btn"
-              style={{ background: "var(--color-yes)", color: "#06140c" }}
-              disabled={!connected || busy}
-              onClick={() => stake("YES")}
-            >
-              Stake YES
-            </button>
-            <button
-              type="button"
-              className="btn"
-              style={{ background: "var(--color-no)", color: "#1a0a0e" }}
-              disabled={!connected || busy}
-              onClick={() => stake("NO")}
-            >
-              Stake NO
+            {!connected && (
+              <p className="term mt-2 text-xs text-[var(--color-chalk-dim)]">
+                Connect a wallet to stake.
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="mt-6 flex flex-wrap gap-3 border-t border-[var(--color-line)] pt-5">
+            <Link href={`/receipt?address=${address}`} className="btn btn-primary">
+              View settlement receipt
+            </Link>
+            <button type="button" className="btn" disabled={!connected || busy} onClick={claim}>
+              Claim winnings / refund
             </button>
           </div>
-          {!connected && (
-            <p className="mt-2 text-xs text-[var(--color-muted)]">Connect a wallet to stake.</p>
-          )}
-        </div>
-      ) : (
-        <div className="mt-6 flex flex-wrap gap-3 border-t border-[var(--color-line)] pt-5">
-          <Link href={`/receipt?address=${address}`} className="btn btn-primary">
-            View settlement receipt
-          </Link>
-          <button type="button" className="btn" disabled={!connected || busy} onClick={claim}>
-            Claim winnings / refund
-          </button>
-        </div>
-      )}
-      {(note || status !== "idle") && (
-        <p className="mt-3 text-xs text-[var(--color-muted)]">{note ?? `status: ${status}`}</p>
-      )}
+        )}
+        {(note || status !== "idle") && (
+          <p className="term mt-3 text-xs text-[var(--color-chalk-dim)]">
+            {note ?? `STATUS: ${status}`}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Box({ k, children }: { k: string; children: React.ReactNode }) {
+  return (
+    <div className="bg-[var(--color-ink)] px-3 py-2.5">
+      <p className="label">{k}</p>
+      <div className="mt-0.5">{children}</div>
     </div>
   );
 }
 
 function MarketInner() {
   const address = useSearchParams().get("address");
-  if (!address) return <p className="text-[var(--color-muted)]">No market address.</p>;
+  if (!address)
+    return <p className="term text-xs text-[var(--color-chalk-dim)]">No market address.</p>;
   return <MarketDetail address={address} />;
 }
 
 export default function MarketPage() {
   return (
-    <div className="mx-auto max-w-3xl px-5 py-10">
+    <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
       <Link
-        href="/"
-        className="mb-6 inline-block text-sm text-[var(--color-muted)] hover:text-[var(--color-chalk)]"
+        href="/#fixtures"
+        className="term mb-6 inline-block text-xs text-[var(--color-chalk-dim)] transition-colors hover:text-[var(--color-volt)]"
       >
-        ← Markets
+        ← BACK TO THE BOARD
       </Link>
-      <Suspense fallback={<p className="text-[var(--color-muted)]">Loading…</p>}>
+      <Suspense fallback={<p className="term text-xs text-[var(--color-chalk-dim)]">LOADING…</p>}>
         <MarketInner />
       </Suspense>
     </div>

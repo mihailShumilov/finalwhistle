@@ -2,188 +2,176 @@
 
 import Link from "next/link";
 import { MarketsSection } from "../components/MarketsSection";
-import { CountUp, Reveal } from "../components/motion";
+import { Reveal } from "../components/motion";
 import { OracleRace } from "../components/OracleRace";
+import { Ticker } from "../components/Ticker";
 
 export default function Home() {
   return (
     <>
       <Hero />
-      <Problem />
-      <HowItWorks />
+      <Ticker />
+      <Villain />
+      <Laws />
       <MarketsSection />
-      <FinalCta />
+      <KickOff />
     </>
   );
 }
 
-/* ------------------------------------------------------------------ Hero */
+/* ----------------------------------------------------------------- HERO */
 function Hero() {
   return (
-    <section className="relative overflow-hidden">
-      <div className="pitch-lines pointer-events-none absolute inset-0" />
-      <div
-        className="anim-drift pointer-events-none absolute -top-24 right-[-10%] h-80 w-80 rounded-full opacity-50 blur-3xl"
-        style={{ background: "radial-gradient(circle, rgba(56,189,248,0.25), transparent 70%)" }}
-      />
-      <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-5 pb-10 pt-16 sm:pt-24 lg:grid-cols-[1.05fr_0.95fr]">
+    <section className="relative overflow-hidden border-b border-[var(--color-line)]">
+      {/* giant stencil watchword behind */}
+      <span
+        className="score pointer-events-none absolute -right-4 top-2 select-none text-[28vw] leading-none stencil sm:top-0 sm:text-[20rem]"
+        aria-hidden
+      >
+        FT
+      </span>
+
+      <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 pb-12 pt-12 sm:px-6 sm:pt-16 lg:grid-cols-[1.1fr_0.9fr]">
         <div>
-          <span className="pill">
-            <span className="live-dot" /> Live on Solana devnet · USDC-only
-          </span>
-          <h1 className="display mt-5 text-4xl font-bold leading-[1.05] sm:text-6xl">
-            Bets that settle
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="tag-volt">
+              <span className="dot" /> LIVE · SOLANA DEVNET
+            </span>
+            <span className="tag">USDC-ONLY</span>
+            <span className="tag">NO ORACLE VOTE</span>
+          </div>
+
+          <h1 className="score mt-6 text-[3.4rem] leading-[0.86] sm:text-[6.2rem]">
+            Settled by <span className="volt">proof</span>.
             <br />
-            <span className="gradient-text">at the final whistle.</span>
+            Not by <span className="var line-through decoration-[3px]">vote</span>.
           </h1>
-          <p className="mt-5 max-w-xl text-lg leading-relaxed text-[var(--color-muted)]">
+
+          <p className="mt-6 max-w-xl text-[0.98rem] leading-relaxed text-[var(--color-chalk-dim)]">
             FinalWhistle is a prediction market for objective sports outcomes — corners, goals, goal
-            difference. When the match ends, a <strong className="text-[var(--color-chalk)]">cryptographic
-            proof</strong> settles the bet on-chain. No oracle vote. No dispute window. No operator
-            who can be wrong — or bought.
+            difference. When the match ends, a{" "}
+            <span className="text-[var(--color-chalk)]">cryptographic proof</span> settles the bet
+            on-chain. No oracle vote. No dispute window. No operator who can be wrong — or bought.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="#markets" className="btn btn-primary btn-lg">
-              Explore live markets →
+            <Link href="#fixtures" className="btn btn-primary btn-lg">
+              Enter the markets →
             </Link>
-            <Link href="#settle" className="btn btn-lg btn-ghost">
-              ▶ See it settle
+            <Link href="#review" className="btn btn-lg">
+              ▶ Watch it settle
             </Link>
           </div>
 
-          <dl className="mt-12 grid max-w-lg grid-cols-3 gap-6">
-            <Stat
-              value={<CountUp value={237} format={(n) => `$${Math.round(n)}M`} />}
-              label="rode on one disputed oracle vote"
-              tone="warn"
-            />
-            <Stat
-              value={<CountUp value={0.4} format={(n) => `${n.toFixed(1)}s`} />}
-              label="to a final, re-verifiable settlement"
-            />
-            <Stat value="0" label="oracle votes · 0 operators" />
-          </dl>
+          {/* scoreboard stat row */}
+          <div className="mt-10 grid max-w-xl grid-cols-3 divide-x divide-[var(--color-line)] border border-[var(--color-line)]">
+            <Stat n="$237M" l="rode on one disputed vote" tone="var" />
+            <Stat n="0.4s" l="to a verifiable decision" />
+            <Stat n="0" l="votes · 0 operators" />
+          </div>
         </div>
 
         <Reveal delay={120}>
-          <HeroReceipt />
+          <DecisionCard />
         </Reveal>
       </div>
     </section>
   );
 }
 
-function Stat({
-  value,
-  label,
-  tone,
-}: {
-  value: React.ReactNode;
-  label: string;
-  tone?: "warn";
-}) {
+function Stat({ n, l, tone }: { n: string; l: string; tone?: "var" }) {
   return (
-    <div>
-      <dt
-        className="display text-2xl font-bold sm:text-3xl"
-        style={{ color: tone === "warn" ? "var(--color-whale)" : "var(--color-grass-bright)" }}
+    <div className="px-3 py-3 first:pl-4">
+      <div
+        className="score text-3xl tabular-nums sm:text-4xl"
+        style={{ color: tone === "var" ? "var(--color-var)" : "var(--color-volt)" }}
       >
-        {value}
-      </dt>
-      <dd className="mt-1 text-xs leading-snug text-[var(--color-muted)]">{label}</dd>
+        {n}
+      </div>
+      <div className="label mt-1 leading-tight">{l}</div>
     </div>
   );
 }
 
-/** A floating mock of the Verifiable Settlement Receipt — the product's hero artifact. */
-function HeroReceipt() {
+/** The hero artifact: a match-official DECISION sheet with a slammed stamp. */
+function DecisionCard() {
   return (
-    <div className="anim-float relative">
-      <div
-        className="absolute -inset-0.5 rounded-[1.2rem] opacity-40 blur-xl"
-        style={{ background: "linear-gradient(120deg,#2bdc6e,#38bdf8)" }}
-      />
-      <div className="glass relative overflow-hidden">
-        <div className="flex items-center justify-between border-b border-[var(--color-line)] px-5 py-3.5">
-          <span className="eyebrow">Verifiable Settlement Receipt</span>
-          <span className="badge anim-pop bg-[#0f2417] text-[var(--color-grass-bright)]">
-            ✓ re-verified
-          </span>
+    <div className="panel crt">
+      <div className="led flex items-center justify-between px-3 py-1.5">
+        <span className="term text-[0.66rem] font-bold tracking-widest">⬢ MATCH DECISION SHEET</span>
+        <span className="term text-[0.62rem] font-bold tracking-widest opacity-80">RE-VERIFIED</span>
+      </div>
+
+      <div className="relative p-5">
+        <span className="stamp anim-stamp absolute right-4 top-3 text-2xl">YES ✓</span>
+
+        <p className="label">Market</p>
+        <p className="score mt-1 text-2xl tracking-wide">Total corners &gt; 10</p>
+
+        <div className="mt-5 grid grid-cols-2 gap-px border border-[var(--color-line)] bg-[var(--color-line)]">
+          <Field k="Proven on TxLINE" v="corners = 13" />
+          <Field k="Predicate" v="13 > 10 → YES" />
+          <Field k="On-chain result" v="YES wins" volt />
+          <Field k="Re-computed" v="matches ✓" volt />
         </div>
-        <div className="space-y-3 p-5 text-sm">
-          <RcRow label="Market" value="Total corners > 10" />
-          <RcRow label="Proven on TxLINE" value="corners = 13" mono />
-          <RcRow label="On-chain resolution" value="YES wins" valueClass="text-[var(--color-yes)]" />
-          <RcRow
-            label="Re-computed from proof"
-            value="YES — matches chain ✓"
-            valueClass="text-[var(--color-yes)]"
-          />
-          <div className="!mt-4 rounded-lg border border-[var(--color-line)] bg-[var(--color-pitch)] p-3">
-            <p className="eyebrow">Merkle root · events sub-tree</p>
-            <p className="mono mt-1 break-all text-[0.7rem] text-[var(--color-proof)]">
-              0x9f3a…c41d8e2b
-            </p>
-          </div>
-          <p className="!mt-4 text-xs leading-relaxed text-[var(--color-muted)]">
-            Anyone can re-fetch the proof, recompute the predicate, and confirm it matches the chain.
-            No trust required.
+
+        <div className="mt-4 border border-[var(--color-line)] bg-[var(--color-pitch)] p-3">
+          <p className="label">Merkle root · events sub-tree</p>
+          <p className="term mt-1 break-all text-[0.68rem]" style={{ color: "var(--color-sky)" }}>
+            0x9f3a4c1d…e2b8a014c41d8e2b
           </p>
         </div>
-        <div className="h-1 w-full flow-bar" />
+
+        <p className="term mt-4 text-[0.7rem] leading-relaxed text-[var(--color-chalk-faint)]">
+          ANYONE CAN RE-FETCH THE PROOF, RECOMPUTE THE PREDICATE, AND CONFIRM IT MATCHES THE CHAIN. NO
+          TRUST REQUIRED.
+        </p>
       </div>
     </div>
   );
 }
 
-function RcRow({
-  label,
-  value,
-  mono,
-  valueClass = "",
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-  valueClass?: string;
-}) {
+function Field({ k, v, volt }: { k: string; v: string; volt?: boolean }) {
   return (
-    <div className="flex items-center justify-between gap-3">
-      <span className="text-xs text-[var(--color-muted)]">{label}</span>
-      <span className={`${mono ? "mono" : ""} font-medium ${valueClass}`}>{value}</span>
+    <div className="bg-[var(--color-ink)] px-3 py-2.5">
+      <p className="label">{k}</p>
+      <p className="term mt-0.5 text-sm" style={{ color: volt ? "var(--color-volt)" : undefined }}>
+        {v}
+      </p>
     </div>
   );
 }
 
-/* --------------------------------------------------------------- Problem */
-function Problem() {
+/* --------------------------------------------------------------- VILLAIN */
+function Villain() {
   return (
-    <section id="settle" className="scroll-mt-20 border-y border-[var(--color-line)] bg-[var(--color-pitch-2)]">
-      <div className="mx-auto max-w-6xl px-5 py-16">
+    <section id="review" className="scroll-mt-16 border-b border-[var(--color-line)] bg-[var(--color-ink)]">
+      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
         <Reveal>
-          <div className="max-w-2xl">
-            <p className="eyebrow text-[var(--color-whale)]">The problem nobody fixed</p>
-            <h2 className="display mt-2 text-3xl font-bold sm:text-4xl">
-              Today, a winning bet is decided by{" "}
-              <span className="gradient-text-warn">a vote you can buy.</span>
-            </h2>
-            <p className="mt-4 text-[var(--color-muted)]">
-              Most prediction markets don&apos;t actually <em>know</em> who won. They ask token
-              holders to vote — and the biggest wallet wins the vote. In one infamous case,{" "}
-              <strong className="text-[var(--color-chalk)]">$237M</strong> hinged on a single
-              disputed outcome that whales could swing. The crowd was right; the rules let money
-              decide anyway.
-            </p>
-            <p className="mt-4 text-[var(--color-muted)]">
-              For an objective sports stat — the number of corners, the final score — that&apos;s
-              absurd. The answer isn&apos;t an opinion. It&apos;s a fact on a signed data feed.
-              FinalWhistle settles on the fact.
-            </p>
+          <p className="label var flex items-center gap-2">
+            <span className="dot-var" /> UNDER REVIEW
+          </p>
+          <h2 className="score mt-3 max-w-3xl text-4xl leading-[0.92] sm:text-6xl">
+            Today a winning bet goes to{" "}
+            <span className="var">a vote you can buy.</span>
+          </h2>
+          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[var(--color-chalk-dim)]">
+            Most prediction markets don&apos;t actually <em>know</em> who won. They ask token holders
+            to vote — and the biggest wallet wins the vote. In one infamous case,{" "}
+            <span className="text-[var(--color-chalk)]">$237M</span> hinged on a single disputed
+            outcome whales could swing. For an objective stat — corners, the final score — that&apos;s
+            absurd. The answer isn&apos;t an opinion. It&apos;s a fact on a signed feed.
+          </p>
+        </Reveal>
+
+        <Reveal delay={80}>
+          <div className="mt-8 flex items-center justify-between gap-3 border-b border-[var(--color-line)] pb-3">
+            <p className="score text-2xl tracking-wide sm:text-3xl">One incident · two systems</p>
+            <ReplayHint />
           </div>
         </Reveal>
 
-        <div className="mt-10">
+        <div className="mt-6">
           <OracleRace />
         </div>
       </div>
@@ -191,103 +179,107 @@ function Problem() {
   );
 }
 
-/* ------------------------------------------------------------- How it works */
-const STEPS = [
+function ReplayHint() {
+  return (
+    <span className="term hidden text-[0.66rem] text-[var(--color-chalk-faint)] sm:inline">
+      ⟳ AUTO-PLAYS ON SCROLL · REPLAY ON EACH LANE
+    </span>
+  );
+}
+
+/* ------------------------------------------------------------------ LAWS */
+const LAWS = [
   {
-    icon: "⚖️",
+    no: "01",
     title: "Define the predicate",
-    body: "Pick a real fixture and a stat — “Total corners > 10”, “Home − Away ≥ 2”. A stat, a comparison, a number. Zero ambiguity, nothing for a referee or a voter to interpret.",
+    body: "Pick a real fixture and a stat — “Total corners > 10”, “Home − Away ≥ 2”. A stat, a comparison, a number. Nothing for a referee or a voter to interpret.",
   },
   {
-    icon: "💵",
+    no: "02",
     title: "Back it with USDC",
-    body: "Stake YES or NO into a parimutuel pool. Collateral is always USDC — never a governance token whose price (and votes) a whale can move.",
+    body: "Stake YES or NO into a parimutuel pool. Collateral is always USDC — never a governance token whose price and votes a whale can move.",
   },
   {
-    icon: "🏁",
+    no: "03",
     title: "The whistle settles it",
-    body: "At full time, a TxLINE Merkle proof is verified on Solana via a validate_stat CPI. The market resolves, winners are paid, and a receipt is minted that anyone can re-verify.",
+    body: "At full time a TxLINE Merkle proof is verified on Solana via a validate_stat CPI. The market resolves, winners are paid, and a receipt is minted that anyone can re-verify.",
   },
 ];
 
-function HowItWorks() {
+function Laws() {
   return (
-    <section id="how" className="mx-auto max-w-6xl scroll-mt-20 px-5 py-16">
+    <section id="laws" className="mx-auto max-w-6xl scroll-mt-16 px-4 py-16 sm:px-6">
       <Reveal>
-        <p className="eyebrow">How it works</p>
-        <h2 className="display mt-2 text-3xl font-bold sm:text-4xl">
-          Three steps. <span className="gradient-text">No trust in between.</span>
+        <p className="label">📋 The laws of the game</p>
+        <h2 className="score mt-3 text-4xl tracking-wide sm:text-6xl">
+          Three laws. <span className="volt">No trust in between.</span>
         </h2>
       </Reveal>
 
-      <div className="mt-10 grid gap-4 md:grid-cols-3">
-        {STEPS.map((s, i) => (
-          <Reveal key={s.title} delay={i * 110}>
-            <div className="card card-hover h-full p-6">
-              <div className="flex items-center gap-3">
-                <span className="grid h-11 w-11 place-items-center rounded-xl bg-[var(--color-pitch)] text-2xl ring-1 ring-[var(--color-line-2)]">
-                  {s.icon}
-                </span>
-                <span className="display text-sm font-bold text-[var(--color-muted-2)]">
-                  0{i + 1}
-                </span>
+      <div className="mt-8 grid gap-3 md:grid-cols-3">
+        {LAWS.map((law, i) => (
+          <Reveal key={law.no} delay={i * 90}>
+            <div className="panel hover-lift h-full p-5">
+              <div className="flex items-baseline justify-between">
+                <span className="score text-6xl text-[var(--color-line-2)]">{law.no}</span>
+                <span className="tag-volt term text-[0.6rem]">LAW {law.no}</span>
               </div>
-              <h3 className="display mt-4 text-lg font-bold">{s.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">{s.body}</p>
+              <h3 className="score mt-3 text-2xl tracking-wide">{law.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-[var(--color-chalk-dim)]">{law.body}</p>
             </div>
           </Reveal>
         ))}
       </div>
 
       <Reveal delay={120}>
-        <div className="mt-6 grid gap-3 sm:grid-cols-3">
-          <Guarantee tag="Objective" text="Markets are score-based facts, not opinions or referee calls." />
-          <Guarantee tag="Deterministic" text="The same proof always yields the same result — re-runnable forever." />
-          <Guarantee tag="Permissionless" text="No operator can stall, censor, or overrule a settlement." />
+        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+          <Guarantee t="Objective" d="Score-based facts, not opinions or referee calls." />
+          <Guarantee t="Deterministic" d="The same proof always yields the same result — forever." />
+          <Guarantee t="Permissionless" d="No operator can stall, censor, or overrule a settlement." />
         </div>
       </Reveal>
     </section>
   );
 }
 
-function Guarantee({ tag, text }: { tag: string; text: string }) {
+function Guarantee({ t, d }: { t: string; d: string }) {
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-[var(--color-line)] bg-[var(--color-pitch-2)] p-4">
-      <span className="mt-0.5 text-[var(--color-grass-bright)]">✓</span>
-      <p className="text-sm text-[var(--color-muted)]">
-        <strong className="text-[var(--color-chalk)]">{tag}.</strong> {text}
+    <div className="panel-flat flex items-start gap-3 p-4">
+      <span className="volt term text-sm">[✓]</span>
+      <p className="term text-xs leading-relaxed text-[var(--color-chalk-dim)]">
+        <span className="text-[var(--color-chalk)]">{t.toUpperCase()}.</span> {d}
       </p>
     </div>
   );
 }
 
-/* --------------------------------------------------------------- Final CTA */
-function FinalCta() {
+/* --------------------------------------------------------------- KICK OFF */
+function KickOff() {
   return (
-    <section className="px-5 pb-24">
+    <section className="px-4 pb-20 sm:px-6">
       <Reveal>
-        <div className="relative mx-auto max-w-5xl overflow-hidden rounded-3xl border border-[var(--color-line-2)] p-10 text-center sm:p-16">
-          <div className="pitch-lines pointer-events-none absolute inset-0 opacity-60" />
-          <div
-            className="pointer-events-none absolute inset-0 opacity-70"
-            style={{
-              background:
-                "radial-gradient(600px 240px at 50% 0%, rgba(43,220,110,0.16), transparent 70%)",
-            }}
-          />
-          <div className="relative">
-            <h2 className="display text-3xl font-bold sm:text-4xl">
-              Settle the score with <span className="gradient-text">proof, not politics.</span>
+        <div className="panel crt relative mx-auto max-w-5xl overflow-hidden">
+          <div className="led flex items-center justify-between px-3 py-1.5">
+            <span className="term text-[0.66rem] font-bold tracking-widest blink">● KICK OFF</span>
+            <span className="term text-[0.62rem] font-bold tracking-widest opacity-80">
+              00:00 · 1ST HALF
+            </span>
+          </div>
+          <div className="px-6 py-14 text-center sm:py-20">
+            <h2 className="score text-4xl leading-none sm:text-7xl">
+              Settle the score with
+              <br />
+              <span className="volt">proof, not politics.</span>
             </h2>
-            <p className="mx-auto mt-3 max-w-xl text-[var(--color-muted)]">
+            <p className="term mx-auto mt-4 max-w-xl text-xs leading-relaxed text-[var(--color-chalk-dim)]">
               Connect a Solana wallet, back an outcome with test USDC, and watch the final whistle
               settle it — then re-verify the receipt yourself.
             </p>
             <div className="mt-7 flex flex-wrap justify-center gap-3">
-              <Link href="#markets" className="btn btn-primary btn-lg">
-                Browse markets
+              <Link href="#fixtures" className="btn btn-primary btn-lg">
+                Browse the board
               </Link>
-              <Link href="/create" className="btn btn-lg btn-ghost">
+              <Link href="/create" className="btn btn-lg">
                 Create a market
               </Link>
             </div>
