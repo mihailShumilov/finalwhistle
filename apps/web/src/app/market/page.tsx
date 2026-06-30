@@ -7,14 +7,19 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { inputCls, OddsBar, StatusBadge, Usdc } from "../../components/ui";
 import { fetchMarketView, type MarketView } from "../../lib/api";
+import { explorerTx } from "../../lib/config";
 import { program, useFinalWhistleSender } from "../../lib/sender";
+
+type TxResult =
+  | { kind: "ok"; label: string; outcome: "confirmed" | "expired" | "failed"; signature: string }
+  | { kind: "err"; message: string };
 
 function MarketDetail({ address }: { address: string }) {
   const [market, setMarket] = useState<MarketView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [amount, setAmount] = useState("1");
   const [busy, setBusy] = useState(false);
-  const [note, setNote] = useState<string | null>(null);
+  const [txResult, setTxResult] = useState<TxResult | null>(null);
   const { send, status, address: wallet, connected } = useFinalWhistleSender();
 
   const reload = useCallback(() => {
@@ -24,10 +29,18 @@ function MarketDetail({ address }: { address: string }) {
   }, [address]);
   useEffect(reload, [reload]);
 
+  // Refresh the market after a write lands so the new pools / resolved state show. A second,
+  // delayed read covers the case where the API's RPC node hasn't caught up to the just-confirmed slot.
+  const refreshMarket = useCallback(() => {
+    reload();
+    const t = setTimeout(reload, 1500);
+    return () => clearTimeout(t);
+  }, [reload]);
+
   async function stake(side: "YES" | "NO") {
     if (!market || !wallet) return;
     setBusy(true);
-    setNote(null);
+    setTxResult(null);
     try {
       const ix = await buildPlacePositionIx(program(), {
         bettor: new PublicKey(wallet),
@@ -37,10 +50,15 @@ function MarketDetail({ address }: { address: string }) {
         amount: parseUsdc(amount),
       });
       const res = await send([ix]);
-      setNote(`STAKE ${side}: ${res.outcome} (${res.signature.slice(0, 12)}…)`);
-      reload();
+      setTxResult({
+        kind: "ok",
+        label: `Stake ${side}`,
+        outcome: res.outcome,
+        signature: res.signature,
+      });
+      refreshMarket();
     } catch (e) {
-      setNote(`FAILED: ${e instanceof Error ? e.message : String(e)}`);
+      setTxResult({ kind: "err", message: e instanceof Error ? e.message : String(e) });
     } finally {
       setBusy(false);
     }
@@ -49,7 +67,7 @@ function MarketDetail({ address }: { address: string }) {
   async function claim() {
     if (!market || !wallet) return;
     setBusy(true);
-    setNote(null);
+    setTxResult(null);
     try {
       const me = new PublicKey(wallet);
       const ix = await buildClaimIx(program(), {
@@ -59,10 +77,10 @@ function MarketDetail({ address }: { address: string }) {
         usdcMint: new PublicKey(market.usdcMint),
       });
       const res = await send([ix]);
-      setNote(`CLAIM: ${res.outcome} (${res.signature.slice(0, 12)}…)`);
-      reload();
+      setTxResult({ kind: "ok", label: "Claim", outcome: res.outcome, signature: res.signature });
+      refreshMarket();
     } catch (e) {
-      setNote(`FAILED: ${e instanceof Error ? e.message : String(e)}`);
+      setTxResult({ kind: "err", message: e instanceof Error ? e.message : String(e) });
     } finally {
       setBusy(false);
     }
@@ -154,11 +172,11 @@ function MarketDetail({ address }: { address: string }) {
             </button>
           </div>
         )}
-        {(note || status !== "idle") && (
-          <p className="term mt-3 text-xs text-[var(--color-chalk-dim)]">
-            {note ?? `STATUS: ${status}`}
-          </p>
-        )}
+        {txResult ? (
+          <TxResultPanel result={txResult} />
+        ) : status !== "idle" ? (
+          <p className="term mt-3 text-xs text-[var(--color-chalk-dim)]">STATUS: {status}</p>
+        ) : null}
       </div>
     </div>
   );
@@ -169,6 +187,48 @@ function Box({ k, children }: { k: string; children: React.ReactNode }) {
     <div className="bg-[var(--color-ink)] px-3 py-2.5">
       <p className="label">{k}</p>
       <div className="mt-0.5">{children}</div>
+    </div>
+  );
+}
+
+function TxResultPanel({ result }: { result: TxResult }) {
+  const link = "term break-all underline transition-colors hover:text-[var(--color-volt)]";
+  if (result.kind === "err") {
+    return (
+      <div className="panel panel-var mt-3 p-3">
+        <p className="label var">TRANSACTION FAILED</p>
+        <p className="term mt-1 break-words text-xs var">{result.message}</p>
+      </div>
+    );
+  }
+  if (result.outcome === "confirmed") {
+    return (
+      <div className="panel mt-3 p-3" style={{ borderColor: "var(--color-volt)" }}>
+        <p className="label volt">✓ {result.label.toUpperCase()} — CONFIRMED ON-CHAIN</p>
+        <p className="term mt-1 text-xs text-[var(--color-chalk-dim)]">
+          Tx{" "}
+          <a className={link} href={explorerTx(result.signature)} target="_blank" rel="noreferrer">
+            {result.signature}
+          </a>
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div className="panel mt-3 p-3" style={{ borderColor: "var(--color-amber, #d9a441)" }}>
+      <p className="label" style={{ color: "var(--color-amber, #d9a441)" }}>
+        ⚠ NOT CONFIRMED ({result.outcome.toUpperCase()})
+      </p>
+      <p className="term mt-1 text-xs text-[var(--color-chalk-dim)]">
+        The transaction was submitted but confirmation didn’t come back. It may still have landed —
+        check the explorer, then retry if it didn’t.
+      </p>
+      <p className="term mt-1 text-xs text-[var(--color-chalk-dim)]">
+        Tx{" "}
+        <a className={link} href={explorerTx(result.signature)} target="_blank" rel="noreferrer">
+          {result.signature}
+        </a>
+      </p>
     </div>
   );
 }
