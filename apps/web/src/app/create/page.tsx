@@ -4,7 +4,8 @@ import { buildCreateMarketIx, describePredicate, marketPda } from "@finalwhistle
 import { SOCCER_STAT_LABELS } from "@finalwhistle/shared";
 import { PublicKey } from "@solana/web3.js";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { Field, inputCls } from "../../components/ui";
 import { explorerAddr, explorerTx, USDC_MINT } from "../../lib/config";
 import { program, useFinalWhistleSender } from "../../lib/sender";
@@ -19,6 +20,7 @@ const STAT_OPTIONS = Object.entries(SOCCER_STAT_LABELS).map(([k, v]) => ({
 }));
 
 export default function CreatePage() {
+  const router = useRouter();
   const { send, connected, address } = useFinalWhistleSender();
   const [fixtureId, setFixtureId] = useState("17588395");
   const [statKey, setStatKey] = useState(1);
@@ -47,6 +49,16 @@ export default function CreatePage() {
     [fixtureId, statKey, twoStat, statKey2, op, period, threshold, comparison],
   );
   const title = describePredicate(predicate);
+
+  // On a confirmed create, take the user straight to their new market (the manual
+  // "View market" link stays as a fallback). The detail page reads the account
+  // directly from chain, so a just-confirmed market is immediately available.
+  useEffect(() => {
+    if (result?.kind !== "ok" || result.outcome !== "confirmed") return;
+    const target = `/market?address=${result.market}`;
+    const t = setTimeout(() => router.push(target), 1500);
+    return () => clearTimeout(t);
+  }, [result, router]);
 
   async function create() {
     if (!address) return;
@@ -259,6 +271,12 @@ function CreateResultPanel({ result }: { result: CreateResult }) {
             {result.signature}
           </a>
         </p>
+        <Link
+          href={`/market?address=${result.market}`}
+          className="btn btn-primary mt-3 w-full justify-center"
+        >
+          Opening your market… · View now →
+        </Link>
       </div>
     );
   }
