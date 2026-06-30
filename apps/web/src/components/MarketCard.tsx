@@ -37,11 +37,7 @@ export function MarketCard({ m }: { m: MarketView }) {
   const winner = m.winningSide === 1 ? "YES" : m.winningSide === 2 ? "NO" : "";
 
   const ledClass = voided ? "led-var" : "led";
-  const ledText = open
-    ? "● LIVE"
-    : resolved
-      ? "✓ FULL TIME"
-      : "✕ VOID";
+  const ledText = open ? "● LIVE" : resolved ? "✓ FULL TIME" : "✕ VOID";
 
   return (
     <Link href={href} className={`panel hover-lift block ${voided ? "panel-var" : ""}`}>
@@ -65,6 +61,9 @@ export function MarketCard({ m }: { m: MarketView }) {
         <p className="term mt-1.5 truncate text-[0.7rem] text-[var(--color-chalk-faint)]">
           {m.predicate}
         </p>
+        <p className="term mt-1 text-[0.6rem] uppercase tracking-wider text-[var(--color-chalk-faint)]">
+          by {m.authority.slice(0, 4)}…{m.authority.slice(-4)}
+        </p>
 
         <div className="my-4">
           <SegBar yes={yes} />
@@ -76,7 +75,13 @@ export function MarketCard({ m }: { m: MarketView }) {
           </span>
           <span
             className="term text-[0.7rem] font-bold tracking-wider"
-            style={{ color: resolved ? "var(--color-sky)" : voided ? "var(--color-var)" : "var(--color-volt)" }}
+            style={{
+              color: resolved
+                ? "var(--color-sky)"
+                : voided
+                  ? "var(--color-var)"
+                  : "var(--color-volt)",
+            }}
           >
             {open && "PLACE BET →"}
             {resolved && "VERIFY RECEIPT →"}
