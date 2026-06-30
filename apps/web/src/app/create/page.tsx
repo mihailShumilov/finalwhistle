@@ -6,8 +6,12 @@ import { PublicKey } from "@solana/web3.js";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Field, inputCls } from "../../components/ui";
-import { USDC_MINT } from "../../lib/config";
+import { explorerAddr, explorerTx, USDC_MINT } from "../../lib/config";
 import { program, useFinalWhistleSender } from "../../lib/sender";
+
+type CreateResult =
+  | { kind: "ok"; outcome: "confirmed" | "expired" | "failed"; market: string; signature: string }
+  | { kind: "err"; message: string };
 
 const STAT_OPTIONS = Object.entries(SOCCER_STAT_LABELS).map(([k, v]) => ({
   key: Number(k),
@@ -28,7 +32,7 @@ export default function CreatePage() {
   const [feeBps, setFeeBps] = useState("200");
   const [usdcMint, setUsdcMint] = useState(USDC_MINT);
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<string | null>(null);
+  const [result, setResult] = useState<CreateResult | null>(null);
 
   const predicate = useMemo(
     () => ({
@@ -69,9 +73,9 @@ export default function CreatePage() {
       });
       const res = await send([ix]);
       const market = marketPda(creator, nonce).toBase58();
-      setResult(`${res.outcome.toUpperCase()}: MARKET ${market}`);
+      setResult({ kind: "ok", outcome: res.outcome, market, signature: res.signature });
     } catch (e) {
-      setResult(`FAILED: ${e instanceof Error ? e.message : String(e)}`);
+      setResult({ kind: "err", message: e instanceof Error ? e.message : String(e) });
     } finally {
       setBusy(false);
     }
@@ -221,11 +225,61 @@ export default function CreatePage() {
           >
             {busy ? "Submitting…" : connected ? "Create market" : "Connect a wallet"}
           </button>
-          {result && (
-            <p className="term break-all text-xs text-[var(--color-chalk-dim)]">{result}</p>
-          )}
+          {result && <CreateResultPanel result={result} />}
         </div>
       </div>
+    </div>
+  );
+}
+
+function CreateResultPanel({ result }: { result: CreateResult }) {
+  if (result.kind === "err") {
+    return (
+      <div className="panel panel-var p-3">
+        <p className="label var">COULD NOT CREATE MARKET</p>
+        <p className="term mt-1 break-words text-xs var">{result.message}</p>
+      </div>
+    );
+  }
+
+  const link = "term break-all underline transition-colors hover:text-[var(--color-volt)]";
+  if (result.outcome === "confirmed") {
+    return (
+      <div className="panel p-3" style={{ borderColor: "var(--color-volt)" }}>
+        <p className="label volt">✓ MARKET CREATED — CONFIRMED ON-CHAIN</p>
+        <p className="term mt-1 text-xs text-[var(--color-chalk-dim)]">
+          Market{" "}
+          <a className={link} href={explorerAddr(result.market)} target="_blank" rel="noreferrer">
+            {result.market}
+          </a>
+        </p>
+        <p className="term mt-1 text-xs text-[var(--color-chalk-dim)]">
+          Tx{" "}
+          <a className={link} href={explorerTx(result.signature)} target="_blank" rel="noreferrer">
+            {result.signature}
+          </a>
+        </p>
+      </div>
+    );
+  }
+
+  // expired / failed: the send left the client but confirmation didn't come back clean —
+  // it may still have landed, so point the user at the explorer rather than implying nothing happened.
+  return (
+    <div className="panel p-3" style={{ borderColor: "var(--color-amber, #d9a441)" }}>
+      <p className="label" style={{ color: "var(--color-amber, #d9a441)" }}>
+        ⚠ NOT CONFIRMED ({result.outcome.toUpperCase()})
+      </p>
+      <p className="term mt-1 text-xs text-[var(--color-chalk-dim)]">
+        The transaction was submitted but confirmation didn’t come back. It may still have landed —
+        check the explorer, then retry if it didn’t.
+      </p>
+      <p className="term mt-1 text-xs text-[var(--color-chalk-dim)]">
+        Tx{" "}
+        <a className={link} href={explorerTx(result.signature)} target="_blank" rel="noreferrer">
+          {result.signature}
+        </a>
+      </p>
     </div>
   );
 }
