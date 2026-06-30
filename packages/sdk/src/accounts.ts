@@ -119,6 +119,8 @@ export async function scanMarkets(
 /** A UI/API-friendly, JSON-serialisable view of a market. */
 export interface MarketSummary {
   address: string;
+  /** Creator / fee-config authority (base58). Lets clients show "markets I created". */
+  authority: string;
   title: string;
   status: string;
   fixtureId: number;
@@ -142,6 +144,7 @@ export interface MarketSummary {
 export function summarizeMarket(address: string, m: MarketAccount): MarketSummary {
   return {
     address,
+    authority: m.authority.toBase58(),
     title: m.title,
     status: enumKey(m.status),
     fixtureId: m.fixtureId.toNumber(),

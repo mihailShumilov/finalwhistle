@@ -3,6 +3,7 @@ import { API_BASE } from "./config";
 
 export interface MarketView {
   address: string;
+  authority: string;
   title: string;
   status: "open" | "resolved" | "voided" | string;
   fixtureId: number;
