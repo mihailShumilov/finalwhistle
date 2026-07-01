@@ -1,0 +1,22 @@
+# Cloudflare Workers Static Assets response-header overrides.
+# Next emits the metadata image routes as extension-less files, which the asset server would
+# otherwise serve as application/octet-stream — social scrapers (X/Slack/Discord/LinkedIn) reject
+# that and drop the preview. Force the correct MIME type. Path matching ignores the ?<hash>
+# cache-buster Next appends to these URLs.
+/opengraph-image
+  Content-Type: image/png
+  Cache-Control: public, max-age=3600
+/twitter-image
+  Content-Type: image/png
+  Cache-Control: public, max-age=3600
+/apple-icon
+  Content-Type: image/png
+  Cache-Control: public, max-age=86400
+
+# Content-hashed build assets never change — cache them forever.
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# AI-discovery summary — keep an explicit UTF-8 text type for the em dashes.
+/llms.txt
+  Content-Type: text/plain; charset=utf-8

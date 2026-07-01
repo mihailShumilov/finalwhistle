@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="FinalWhistle">
+  <rect width="32" height="32" rx="7" fill="#070a07"/>
+  <rect x="1" y="1" width="30" height="30" rx="6" fill="none" stroke="#2a352c" stroke-width="1.3"/>
+  <!-- lanyard ring + stem -->
+  <circle cx="8.4" cy="9.4" r="2.3" fill="none" stroke="#c8ff2d" stroke-width="1.7"/>
+  <rect x="7.5" y="11" width="1.8" height="3.6" rx="0.6" fill="#c8ff2d"/>
+  <!-- mouthpiece tube -->
+  <rect x="4.3" y="14" width="12.8" height="6.2" rx="3.1" fill="#c8ff2d"/>
+  <!-- chamber -->
+  <circle cx="20.2" cy="17.6" r="7" fill="#c8ff2d"/>
+  <!-- fipple slot (top opening) -->
+  <rect x="18.1" y="9.4" width="4.2" height="4.6" rx="1.3" fill="#070a07"/>
+  <!-- pea / sound port -->
+  <circle cx="20.4" cy="18.4" r="2.2" fill="#070a07"/>
+</svg>

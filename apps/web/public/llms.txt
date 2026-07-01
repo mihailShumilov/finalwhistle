@@ -1,0 +1,32 @@
+# FinalWhistle
+
+> A permissionless, parametric prop-bet protocol on Solana whose markets are cryptographic predicates that self-settle the moment a TxLINE Merkle proof is verified on-chain — no oracle vote, no dispute window, no operator. Slogan: settled at the final whistle, proven on-chain, never voted on.
+
+FinalWhistle turns a prediction market into an objective fact check. A market is a predicate over a real sports stat (for example "Total corners > 10" or "Home − Away ≥ 2"). When the match ends, a TxLINE Merkle proof of the stat is verified on Solana through a `validate_stat` CPI; if the proof satisfies the predicate the market resolves and winners are paid atomically. Settlement is deterministic — the same proof always produces the same result — so it can be independently re-verified by anyone, forever.
+
+## What makes it different
+
+- **Settled by proof, not by vote.** Vote-based markets (e.g. UMA-style optimistic oracles) let the largest token holder swing a disputed outcome — a $237M dispute rode on one such vote. Operator-settled books (Kalshi, Drift, SX) rely on a conflicted party. FinalWhistle settles objective stats with a cryptographic proof, so an objective sports result cannot be disputed, bought, or censored.
+- **No oracle vote, no dispute window, no operator.** There is no human in the settlement path.
+- **USDC-only collateral.** Stakes go into a parimutuel YES/NO pool. Collateral is never a governance token whose price or votes a whale could move.
+- **Objective, score-based markets only.** Corners, goals, goal difference, win/draw/loss, totals, advancement — never injury, referee-decision, or discrete in-game props.
+- **Verifiable Settlement Receipt.** Every settlement shows the predicate, the proven stat values, the Merkle root, and the on-chain transaction; anyone can re-fetch the proof, recompute the predicate in the browser, and confirm it matches the chain. No trust required.
+
+## Stack
+
+- **Chain:** Solana (live on devnet).
+- **Data source:** TxLINE — every market and every settlement traces to a TxLINE feed and a verifiable Merkle proof.
+- **Settlement mechanic:** a Solana program CPI into TxLINE's `validate_stat` Merkle-recompute instruction.
+- **Reliability:** RPC failover, correct send/confirm, and fee estimation via `solana-resilience-kit`.
+
+## Pages
+
+- [Home](https://finalwhistle-web.mschumilow.workers.dev/): the markets board, live odds, and the oracle-comparison demo.
+- [Create a market](https://finalwhistle-web.mschumilow.workers.dev/create): predicate builder — pick a fixture, stat, comparison, and threshold.
+- [Market detail](https://finalwhistle-web.mschumilow.workers.dev/market): stake USDC on YES/NO and watch it settle.
+- [Verifiable Settlement Receipt](https://finalwhistle-web.mschumilow.workers.dev/receipt): look up a settlement and independently re-verify its proof.
+
+## Source
+
+- [GitHub — solana-resilience-kit](https://github.com/mihailShumilov/solana-rpc-sdk)
+- [TxLINE documentation](https://txline-docs.txodds.com)
